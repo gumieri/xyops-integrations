@@ -1,0 +1,51 @@
+# Binaries
+terraform-provider-xyops
+xyops-mcp
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go
+# Test binary, built with `go test -c`
+*.test
+# Output of the go coverage tool
+*.coverprofile
+*.html
+
+# Terraform
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.*
+.terraform/
+.terraform.lock.hcl
+terraform.tfplan
+crash.log
+crash.*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Build output
+dist/
+build/
+
+# Files not checked in
+.env
+.env.local
+*.pem
+*.key
+*.json.log
+node_modules/
+package-lock.json
+package.json
+bun.lock

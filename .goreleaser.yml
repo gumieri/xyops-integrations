@@ -1,0 +1,61 @@
+project_name: xyops-integrations
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: terraform-provider-xyops
+    main: ./cmd/terraform-provider-xyops
+    binary: terraform-provider-xyops
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+  - id: xyops-mcp
+    main: ./cmd/xyops-mcp
+    binary: xyops-mcp
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+archives:
+  - id: terraform-provider-xyops
+    builds:
+      - terraform-provider-xyops
+    format: zip
+    name_template: "{{ .ProjectName }}_terraform-provider_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+  - id: xyops-mcp
+    builds:
+      - xyops-mcp
+    format: tar.gz
+    name_template: "{{ .ProjectName }}_mcp_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: "{{ .ProjectName }}_checksums.txt"
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-dev"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'

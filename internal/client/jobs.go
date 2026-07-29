@@ -1,0 +1,243 @@
+package client
+
+import "context"
+
+// TriggerOpts configures a run_event/v1 trigger call.
+type TriggerOpts struct {
+	EventID    string
+	EventTitle string
+	Params     map[string]any
+	Tags       []string
+	Input      map[string]any
+	Test       bool
+}
+
+// SearchOpts configures search_jobs/v1.
+type SearchOpts struct {
+	Query  string
+	Limit  int
+	Offset int
+	Sort   string
+	Select []string
+}
+
+// ActiveJobOpts configures get_active_jobs/v1.
+type ActiveJobOpts struct {
+	EventID string
+	Limit   int
+	Offset  int
+}
+
+// JobsService
+func (s *JobsService) Trigger(ctx context.Context, eventID string, params map[string]any) (*TriggerResult, error) {
+	opts := TriggerOpts{EventID: eventID, Params: params}
+	return s.TriggerWithOpts(ctx, opts)
+}
+
+// TriggerWithOpts dispatches an event execution on demand via run_event/v1.
+func (s *JobsService) TriggerWithOpts(ctx context.Context, opts TriggerOpts) (*TriggerResult, error) {
+	payload := map[string]any{}
+	if opts.EventID != "" {
+		payload["id"] = opts.EventID
+	}
+	if opts.EventTitle != "" {
+		payload["title"] = opts.EventTitle
+	}
+	if opts.Params != nil {
+		payload["params"] = opts.Params
+	}
+	if opts.Tags != nil {
+		payload["tags"] = opts.Tags
+	}
+	if opts.Input != nil {
+		payload["input"] = opts.Input
+	}
+	if opts.Test {
+		payload["test"] = true
+	}
+
+	body, err := s.client.DoPOST(ctx, "run_event/v1", payload)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp TriggerResult
+	if err := unmarshalJSON(body, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// GetActive lists active jobs with optional filters.
+func (s *JobsService) GetActive(ctx context.Context, opts *ActiveJobOpts) ([]Job, error) {
+	params := map[string]string{}
+	if opts != nil {
+		if opts.EventID != "" {
+			params["event_id"] = opts.EventID
+		}
+		if opts.Limit > 0 {
+			params["limit"] = itoa(opts.Limit)
+		}
+		if opts.Offset > 0 {
+			params["offset"] = itoa(opts.Offset)
+		}
+	}
+
+	body, err := s.client.DoGETWithQuery(ctx, "get_active_jobs/v1", params)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp struct {
+		Code int   `json:"code"`
+		Rows []Job `json:"rows"`
+	}
+	if err := unmarshalJSON(body, &resp); err != nil {
+		return nil, err
+	}
+	return resp.Rows, nil
+}
+
+func (s *JobsService) GetActiveSummary(ctx context.Context) (map[string]any, error) {
+	body, err := s.client.DoGET(ctx, "get_active_job_summary/v1")
+	if err != nil {
+		return nil, err
+	}
+
+	var result map[string]any
+	if err := unmarshalJSON(body, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (s *JobsService) GetWorkflowSummary(ctx context.Context, jobID string) (map[string]any, error) {
+	body, err := s.client.DoGETWithQuery(ctx, "get_workflow_job_summary/v1", map[string]string{"id": jobID})
+	if err != nil {
+		return nil, err
+	}
+
+	var result map[string]any
+	if err := unmarshalJSON(body, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (s *JobsService) Get(ctx context.Context, jobID string) (*Job, error) {
+	body, err := s.client.DoGETWithQuery(ctx, "get_job/v1", map[string]string{"id": jobID})
+	if err != nil {
+		return nil, err
+	}
+
+	var resp struct {
+		Code int  `json:"code"`
+		Job  *Job `json:"job"`
+	}
+	if err := unmarshalJSON(body, &resp); err != nil {
+		return nil, err
+	}
+	return resp.Job, nil
+}
+
+func (s *JobsService) GetBatch(ctx context.Context, ids []string, verbose bool) ([]Job, error) {
+	payload := map[string]any{"ids": ids}
+	if verbose {
+		payload["verbose"] = true
+	}
+
+	body, err := s.client.DoPOST(ctx, "get_jobs/v1", payload)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp struct {
+		Code int   `json:"code"`
+		Rows []Job `json:"rows"`
+	}
+	if err := unmarshalJSON(body, &resp); err != nil {
+		return nil, err
+	}
+	return resp.Rows, nil
+}
+
+// Search queries completed jobs with PxQL syntax.
+func (s *JobsService) Search(ctx context.Context, query string) ([]Job, error) {
+	return s.SearchWithOpts(ctx, SearchOpts{Query: query})
+}
+
+// SearchWithOpts queries completed jobs with full control.
+func (s *JobsService) SearchWithOpts(ctx context.Context, opts SearchOpts) ([]Job, error) {
+	params := map[string]string{}
+	if opts.Query != "" {
+		params["q"] = opts.Query
+	}
+	if opts.Limit > 0 {
+		params["limit"] = itoa(opts.Limit)
+	}
+	if opts.Offset > 0 {
+		params["offset"] = itoa(opts.Offset)
+	}
+	if opts.Sort != "" {
+		params["sort"] = opts.Sort
+	}
+	if len(opts.Select) > 0 {
+		params["select"] = joinComma(opts.Select)
+	}
+
+	body, err := s.client.DoGETWithQuery(ctx, "search_jobs/v1", params)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp struct {
+		Code int   `json:"code"`
+		Rows []Job `json:"rows"`
+	}
+	if err := unmarshalJSON(body, &resp); err != nil {
+		return nil, err
+	}
+	return resp.Rows, nil
+}
+
+func (s *JobsService) GetEventHistory(ctx context.Context, eventID string) (map[string]any, error) {
+	body, err := s.client.DoGETWithQuery(ctx, "get_event_history/v1", map[string]string{"id": eventID})
+	if err != nil {
+		return nil, err
+	}
+
+	var result map[string]any
+	if err := unmarshalJSON(body, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (s *JobsService) Abort(ctx context.Context, jobID string) error {
+	_, err := s.client.DoPOST(ctx, "abort_job/v1", map[string]string{"id": jobID})
+	return err
+}
+
+func (s *JobsService) Resume(ctx context.Context, jobID string, params map[string]any) error {
+	payload := map[string]any{"id": jobID}
+	if params != nil {
+		payload["params"] = params
+	}
+	_, err := s.client.DoPOST(ctx, "resume_job/v1", payload)
+	return err
+}
+
+func (s *JobsService) Delete(ctx context.Context, jobID string) error {
+	_, err := s.client.DoPOST(ctx, "delete_job/v1", map[string]string{"id": jobID})
+	return err
+}
+
+func (s *JobsService) FlushQueue(ctx context.Context, eventID string) error {
+	_, err := s.client.DoPOST(ctx, "flush_event_queue/v1", map[string]string{"id": eventID})
+	return err
+}
+
+func (s *JobsService) ManageTags(ctx context.Context, jobID string, tags []string) error {
+	_, err := s.client.DoPOST(ctx, "manage_job_tags/v1", map[string]any{"id": jobID, "tags": tags})
+	return err
+}

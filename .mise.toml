@@ -1,0 +1,20 @@
+[tools]
+go = "latest"
+
+[tasks]
+build-provider = "cd cmd/terraform-provider-xyops && go build -o ../../terraform-provider-xyops ."
+build-mcp = "cd cmd/xyops-mcp && go build -o ../../xyops-mcp ."
+build = ["build-provider", "build-mcp"]
+
+test = "go test ./... -count=1"
+race = "go test -race -count=1 ./..."
+
+lint = "golangci-lint run ./..."
+vet = "go vet ./..."
+
+validate-all = ["lint", "vet", "test"]
+
+clean = "rm -f terraform-provider-xyops xyops-mcp && rm -rf dist/"
+
+release = "goreleaser release --clean"
+snapshot = "goreleaser release --snapshot --clean"
