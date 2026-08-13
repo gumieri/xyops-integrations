@@ -135,24 +135,33 @@ func (c *Client) DoRequest(ctx context.Context, method, path string, body any) (
 	if err != nil {
 		return nil, fmt.Errorf("do request: %w", err)
 	}
-	// The body is fully consumed by io.ReadAll below, so a plain Close suffices
-	// for connection reuse. On the ReadAll error path some bytes may be left
-	// unconsumed, but the connection is not reused for that request anyway.
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("read response body: %w", err)
 	}
 
-	// Check HTTP status
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+	if err := checkErrorResponse(resp.StatusCode, respBody); err != nil {
+		return nil, err
+	}
+	return respBody, nil
+}
+
+// checkErrorResponse inspects a response for API-reported errors:
+// non-2xx HTTP status, a non-zero code field, or a "session" message on an
+// otherwise-successful response (the API sometimes reports session expiry
+// that way).
+func checkErrorResponse(statusCode int, respBody []byte) error {
+	if statusCode < 200 || statusCode >= 300 {
 		var apiErr struct {
 			Code    int    `json:"code"`
 			Message string `json:"message,omitempty"`
 		}
 		if err := json.Unmarshal(respBody, &apiErr); err == nil && (apiErr.Code != 0 || apiErr.Message != "") {
-			return nil, NewAPIError(apiErr.Code, apiErr.Message, resp.StatusCode)
+			return NewAPIError(apiErr.Code, apiErr.Message, statusCode)
 		}
 		// Fallback: use the raw body but truncate to avoid polluting
 		// error messages with HTML or large payloads.
@@ -161,25 +170,23 @@ func (c *Client) DoRequest(ctx context.Context, method, path string, body any) (
 		if len(msg) > maxRawMsg {
 			msg = msg[:maxRawMsg]
 		}
-		return nil, NewAPIError(0, msg, resp.StatusCode)
+		return NewAPIError(0, msg, statusCode)
 	}
 
-	// Check code field even on successful HTTP responses
 	var bodyCode struct {
 		Code    int    `json:"code"`
 		Message string `json:"message,omitempty"`
 	}
-	if err := json.Unmarshal(respBody, &bodyCode); err == nil {
-		if bodyCode.Code != 0 {
-			return nil, NewAPIError(bodyCode.Code, bodyCode.Message, resp.StatusCode)
-		}
-		// The API sometimes reports session expiry via a "session" message
-		// even on HTTP 200 responses.
-		if bodyCode.Message == "session" {
-			return nil, NewAPIError(bodyCode.Code, bodyCode.Message, resp.StatusCode)
-		}
+	if err := json.Unmarshal(respBody, &bodyCode); err != nil {
+		return nil
 	}
-	return respBody, nil
+	if bodyCode.Code != 0 {
+		return NewAPIError(bodyCode.Code, bodyCode.Message, statusCode)
+	}
+	if bodyCode.Message == "session" {
+		return NewAPIError(bodyCode.Code, bodyCode.Message, statusCode)
+	}
+	return nil
 }
 
 // DoGET performs a GET request.

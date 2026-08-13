@@ -1,0 +1,24 @@
+FROM golang:1.26-alpine AS builder
+RUN apk add --no-cache ca-certificates && \
+    adduser -D -H -u 65532 -g '' -s /sbin/nologin xyops && \
+    mkdir -p /tmp/etc && \
+    echo "xyops:x:65532:65532::/home/xyops:/sbin/nologin" > /tmp/etc/passwd && \
+    echo "xyops:x:65532:" > /tmp/etc/group
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN --mount=type=cache,target=/go/pkg/mod go mod download
+COPY . .
+ARG TARGETARCH
+ARG VERSION=dev
+ARG COMMIT=unknown
+ARG BUILDTIME=unknown
+RUN CGO_ENABLED=0 GOOS=linux GOARCH="${TARGETARCH:-amd64}" go build \
+  -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT} -X main.buildTime=${BUILDTIME}" \
+  -o xyops-mcp ./cmd/xyops-mcp
+FROM scratch
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /tmp/etc/passwd /etc/passwd
+COPY --from=builder /tmp/etc/group /etc/group
+COPY --from=builder /src/xyops-mcp /xyops-mcp
+USER xyops:xyops
+ENTRYPOINT ["/xyops-mcp"]

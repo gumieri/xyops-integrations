@@ -43,7 +43,7 @@ func (r *eventResource) Metadata(_ context.Context, _ resource.MetadataRequest, 
 	resp.TypeName = "xyops_event"
 }
 
-func (r *eventResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *eventResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) { //nolint:funlen
 	resp.Schema = schema.Schema{
 		Description: "xyops event",
 		Attributes: map[string]schema.Attribute{

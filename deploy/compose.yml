@@ -1,0 +1,14 @@
+version: "3.9"
+
+services:
+  xyops-mcp:
+    build:
+      context: .
+      dockerfile: deploy/Containerfile
+    image: ghcr.io/${GITHUB_REPOSITORY:-gumieri/xyops-integrations}:latest
+    restart: on-failure
+    environment:
+      - XYOPS_BASE_URL=${XYOPS_BASE_URL:-http://xyops:8000}
+      - XYOPS_API_KEY=${XYOPS_API_KEY}
+    volumes:
+      - /etc/xyops:/etc/xyops:ro

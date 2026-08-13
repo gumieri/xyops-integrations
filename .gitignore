@@ -37,6 +37,9 @@ crash.*.log
 dist/
 build/
 
+# SBOM artifacts (release workflow)
+*.spdx.json
+
 # Files not checked in
 .env
 .env.local

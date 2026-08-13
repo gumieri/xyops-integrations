@@ -1,8 +1,14 @@
+version: 2
+
 project_name: xyops-integrations
+
+env:
+  - GOFLAGS=-mod=readonly
 
 before:
   hooks:
-    - go mod tidy
+    - go test ./... -race -timeout 5m
+    - go vet ./...
 
 builds:
   - id: terraform-provider-xyops
@@ -17,7 +23,10 @@ builds:
     env:
       - CGO_ENABLED=0
     ldflags:
-      - -s -w -X main.version={{.Version}}
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.buildTime={{.Date}}
 
   - id: xyops-mcp
     main: ./cmd/xyops-mcp
@@ -31,31 +40,103 @@ builds:
     env:
       - CGO_ENABLED=0
     ldflags:
-      - -s -w -X main.version={{.Version}}
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.buildTime={{.Date}}
 
 archives:
   - id: terraform-provider-xyops
     builds:
       - terraform-provider-xyops
     format: zip
-    name_template: "{{ .ProjectName }}_terraform-provider_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    name_template: "{{ .ProjectName }}_terraform-provider_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
 
   - id: xyops-mcp
     builds:
       - xyops-mcp
     format: tar.gz
-    name_template: "{{ .ProjectName }}_mcp_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    name_template: "{{ .ProjectName }}_mcp_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    files:
+      - src: deploy/xyops-mcp.service
 
-checksum:
-  name_template: "{{ .ProjectName }}_checksums.txt"
+nfpms:
+  - id: xyops-integrations
+    package_name: xyops-integrations
+    bindir: /usr/bin
+    formats:
+      - deb
+      - rpm
+      - archlinux
+    contents:
+      - src: deploy/xyops-mcp.service
+        dst: /usr/lib/systemd/system/xyops-mcp.service
+      - src: examples/mcp/opencode-config.json
+        dst: /etc/xyops/opencode-config.json.example
+        type: config|noreplace
+    dependencies:
+      - systemd
+    maintainer: Rafael Gumieri <rgumieri@gmail.com>
+    description: |
+      Go SDK, Terraform provider, and MCP server for xyops.
+    homepage: https://github.com/gumieri/xyops-integrations
+    license: MIT
+    scripts:
+      postinstall: packaging/scripts/postinstall.sh
+      preremove: packaging/scripts/preremove.sh
 
-snapshot:
-  name_template: "{{ incpatch .Version }}-dev"
+aurs:
+  - name: xyops-integrations-bin
+    git_url: ssh://aur@aur.archlinux.org/xyops-integrations-bin.git
+    private_key: "{{ .Env.AUR_KEY }}"
+    package: |
+      # Maintainer: Rafael Gumieri <rgumieri@gmail.com>
+      pkgname=xyops-integrations-bin
+      pkgver={{ .Version }}
+      pkgrel=1
+      pkgdesc="Go SDK, Terraform provider, and MCP server for xyops"
+      arch=('x86_64' 'aarch64')
+      url="https://github.com/gumieri/xyops-integrations"
+      license=('MIT')
+      depends=('systemd')
+      source=(
+        "xyops-mcp::https://github.com/gumieri/xyops-integrations/releases/download/v${pkgver}/xyops-integrations_mcp_${pkgver}_linux_amd64.tar.gz"
+      )
+      sha256sums=('SKIP')
+      package() {
+        install -Dm755 xyops-mcp "${pkgdir}/usr/bin/xyops-mcp"
+        install -Dm644 "${srcdir}/deploy/xyops-mcp.service" "${pkgdir}/usr/lib/systemd/system/xyops-mcp.service"
+      }
 
 changelog:
   sort: asc
   filters:
     exclude:
-      - '^docs:'
-      - '^test:'
-      - '^chore:'
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - "^Merge pull request"
+      - "^Merge branch"
+      - "^refactor:"
+
+checksum:
+  name_template: "{{ .ProjectName }}_checksums.txt"
+
+signs:
+  - id: checksums
+    artifacts: checksum
+    signature: "${artifact}.sigstore.json"
+    args: ["sign-blob", "--bundle=${signature}", "--yes", "${artifact}"]
+    cmd: cosign
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-dev"
+
+release:
+  github:
+    owner: gumieri
+    name: xyops-integrations
+  mode: replace
+  name_template: "xyops-integrations {{ .Version }}"
+  draft: false
+  prerelease: auto

@@ -1,0 +1,25 @@
+[Unit]
+Description=xyops MCP Server
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/xyops-mcp --stdio
+EnvironmentFile=-/etc/xyops/xyops-mcp.env
+User=xyops
+Group=xyops
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+MemoryDenyWriteExecute=true
+LockPersonality=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target

@@ -14,9 +14,14 @@ import (
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// version is set at build time by GoReleaser via -X main.version.
-// When building directly with `go build`, it falls back to "dev".
-var version = "dev"
+// version, commit, and buildTime are set at build time by GoReleaser via
+// -X main.version, -X main.commit, -X main.buildTime. When building directly
+// with `go build`, they fall back to the defaults below.
+var (
+	version   = "dev"
+	commit    = "unknown"
+	buildTime = "unknown"
+)
 
 func main() {
 	baseURL := os.Getenv("XYOPS_BASE_URL")
@@ -43,7 +48,7 @@ func main() {
 	if strings.HasPrefix(baseURL, "http://") {
 		log.Printf("WARNING: XYOPS_BASE_URL uses plain HTTP; the API key will be sent in cleartext")
 	}
-	log.Printf("xyops-mcp %s starting", version)
+	log.Printf("xyops-mcp %s (commit %s, built %s) starting", version, commit, buildTime)
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 

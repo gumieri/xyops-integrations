@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - uses: actions/cache@v5
+        with:
+          path: ~/go/pkg/mod
+          key: go-mod-${{ hashFiles('go.sum') }}
+
+      - run: go test ./... -race -timeout 5m
+      - run: go vet ./...
+
+      - uses: golangci/golangci-lint-action@v9
+        with:
+          version: latest

@@ -12,9 +12,22 @@ import (
 
 //go:generate terraform fmt -recursive examples/
 
-// version is set at build time by GoReleaser via -X main.version.
-// When building directly with `go build`, it falls back to "dev".
-var version = "dev"
+// version, commit, and buildTime are set at build time by GoReleaser via
+// -X main.version, -X main.commit, -X main.buildTime. When building directly
+// with `go build`, they fall back to the defaults below.
+// commit and buildTime are not consumed by the provider itself, but must
+// remain declared so GoReleaser's -X ldflags resolve; the init references
+// keep the `unused` linter happy.
+var (
+	version   = "dev"
+	commit    = "unknown"
+	buildTime = "unknown"
+)
+
+func init() {
+	_ = commit
+	_ = buildTime
+}
 
 func main() {
 	var debug bool

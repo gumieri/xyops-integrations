@@ -17,4 +17,4 @@ validate-all = ["lint", "vet", "test"]
 clean = "rm -f terraform-provider-xyops xyops-mcp && rm -rf dist/"
 
 release = "goreleaser release --clean"
-snapshot = "goreleaser release --snapshot --clean"
+snapshot = "goreleaser release --snapshot --clean --skip sign"

@@ -1,0 +1,44 @@
+version: "2"
+
+run:
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - unused
+    - ineffassign
+    - misspell
+    - gocyclo
+    - funlen
+    - nestif
+  settings:
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment
+    misspell:
+      locale: US
+    gocyclo:
+      min-complexity: 15
+    funlen:
+      lines: 150
+      statements: 80
+    nestif:
+      min-complexity: 4
+  exclusions:
+    paths:
+      - vendor$
+      - third_party$
+      - ".*_test\\.go"
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+
+issues:
+  max-issues-per-linter: 50
+  max-same-issues: 5

@@ -110,109 +110,44 @@ func (r *Resolver) refresh(ctx context.Context, resourceType string) error {
 
 type keyIDPair struct{ key, id string }
 
+// pairList lists items and maps each to a key→ID pair. The extractor
+// functions isolate the differing field accessors so the dispatch switch in
+// listPairs stays a single-statement-per-case.
+func pairList[T any](ctx context.Context, list func(context.Context) ([]T, error), id, title func(T) string) ([]keyIDPair, error) {
+	items, err := list(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]keyIDPair, 0, len(items))
+	for _, it := range items {
+		out = append(out, keyIDPair{key: title(it), id: id(it)})
+	}
+	return out, nil
+}
+
 // listPairs returns key→ID pairs from the list endpoint for a resource type.
 func (r *Resolver) listPairs(ctx context.Context, resourceType string) ([]keyIDPair, error) {
 	switch resourceType {
 	case "tag":
-		tags, err := r.client.Tags.List(ctx)
-		if err != nil {
-			return nil, err
-		}
-		out := make([]keyIDPair, 0, len(tags))
-		for _, t := range tags {
-			out = append(out, keyIDPair{key: t.Title, id: t.ID})
-		}
-		return out, nil
+		return pairList(ctx, r.client.Tags.List, func(t Tag) string { return t.ID }, func(t Tag) string { return t.Title })
 	case "group":
-		groups, err := r.client.Groups.List(ctx)
-		if err != nil {
-			return nil, err
-		}
-		out := make([]keyIDPair, 0, len(groups))
-		for _, g := range groups {
-			out = append(out, keyIDPair{key: g.Title, id: g.ID})
-		}
-		return out, nil
+		return pairList(ctx, r.client.Groups.List, func(g Group) string { return g.ID }, func(g Group) string { return g.Title })
 	case "category":
-		cats, err := r.client.Categories.List(ctx)
-		if err != nil {
-			return nil, err
-		}
-		out := make([]keyIDPair, 0, len(cats))
-		for _, c := range cats {
-			out = append(out, keyIDPair{key: c.Title, id: c.ID})
-		}
-		return out, nil
+		return pairList(ctx, r.client.Categories.List, func(c Category) string { return c.ID }, func(c Category) string { return c.Title })
 	case "plugin":
-		plugins, err := r.client.Plugins.List(ctx)
-		if err != nil {
-			return nil, err
-		}
-		out := make([]keyIDPair, 0, len(plugins))
-		for _, p := range plugins {
-			out = append(out, keyIDPair{key: p.Title, id: p.ID})
-		}
-		return out, nil
+		return pairList(ctx, r.client.Plugins.List, func(p Plugin) string { return p.ID }, func(p Plugin) string { return p.Title })
 	case "monitor":
-		monitors, err := r.client.Monitors.List(ctx)
-		if err != nil {
-			return nil, err
-		}
-		out := make([]keyIDPair, 0, len(monitors))
-		for _, m := range monitors {
-			out = append(out, keyIDPair{key: m.Title, id: m.ID})
-		}
-		return out, nil
+		return pairList(ctx, r.client.Monitors.List, func(m Monitor) string { return m.ID }, func(m Monitor) string { return m.Title })
 	case "role":
-		roles, err := r.client.Roles.List(ctx)
-		if err != nil {
-			return nil, err
-		}
-		out := make([]keyIDPair, 0, len(roles))
-		for _, rl := range roles {
-			out = append(out, keyIDPair{key: rl.Title, id: rl.ID})
-		}
-		return out, nil
+		return pairList(ctx, r.client.Roles.List, func(rl Role) string { return rl.ID }, func(rl Role) string { return rl.Title })
 	case "alert":
-		alerts, err := r.client.Alerts.List(ctx)
-		if err != nil {
-			return nil, err
-		}
-		out := make([]keyIDPair, 0, len(alerts))
-		for _, a := range alerts {
-			out = append(out, keyIDPair{key: a.Title, id: a.ID})
-		}
-		return out, nil
+		return pairList(ctx, r.client.Alerts.List, func(a Alert) string { return a.ID }, func(a Alert) string { return a.Title })
 	case "api_key":
-		keys, err := r.client.APIKeys.List(ctx)
-		if err != nil {
-			return nil, err
-		}
-		out := make([]keyIDPair, 0, len(keys))
-		for _, k := range keys {
-			out = append(out, keyIDPair{key: k.Title, id: k.ID})
-		}
-		return out, nil
+		return pairList(ctx, r.client.APIKeys.List, func(k APIKey) string { return k.ID }, func(k APIKey) string { return k.Title })
 	case "webhook":
-		hooks, err := r.client.WebHooks.List(ctx)
-		if err != nil {
-			return nil, err
-		}
-		out := make([]keyIDPair, 0, len(hooks))
-		for _, h := range hooks {
-			out = append(out, keyIDPair{key: h.Title, id: h.ID})
-		}
-		return out, nil
+		return pairList(ctx, r.client.WebHooks.List, func(h WebHook) string { return h.ID }, func(h WebHook) string { return h.Title })
 	case "event":
-		events, err := r.client.Events.List(ctx)
-		if err != nil {
-			return nil, err
-		}
-		out := make([]keyIDPair, 0, len(events))
-		for _, e := range events {
-			out = append(out, keyIDPair{key: e.Title, id: e.ID})
-		}
-		return out, nil
+		return pairList(ctx, r.client.Events.List, func(e Event) string { return e.ID }, func(e Event) string { return e.Title })
 	default:
 		return nil, fmt.Errorf("unknown resource type %q", resourceType)
 	}

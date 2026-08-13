@@ -124,6 +124,37 @@ TF_ACC=1 go test ./internal/provider/... -v -count=1 -run "^TestAcc"
 
 ## Development
 
+### Installation
+
+Install the release binaries (MCP server + Terraform provider) from GitHub Releases:
+
+```bash
+# Interactive installer (latest release)
+curl -fsSL https://github.com/gumieri/xyops-integrations/releases/latest/download/install.sh | sh
+
+# Pin a specific version; binaries only (no systemd units)
+curl -fsSL https://github.com/gumieri/xyops-integrations/releases/latest/download/install.sh | sh -s -- --version=0.1.0 --binary-only
+```
+
+On Linux the installer also drops a systemd unit (`xyops-mcp.service`) into
+`/usr/lib/systemd/system/` and an example MCP config into `/etc/xyops/`.
+
+### Container
+
+A multi-arch (`linux/amd64`, `linux/arm64`), non-root container image is published
+for the MCP server on every `v*` tag:
+
+```bash
+docker run --rm -it \
+  -e XYOPS_BASE_URL=https://xyops.example.com \
+  -e XYOPS_API_KEY="$XYOPS_API_KEY" \
+  ghcr.io/gumieri/xyops-integrations:latest
+```
+
+Build it locally with `docker build -f deploy/Containerfile .`.
+
+## Development
+
 - Go: 1.26+ (via mise)
 - Lint: `golangci-lint run ./...`
 - Format: `gofmt -w .`
