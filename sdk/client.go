@@ -150,43 +150,83 @@ func (c *Client) DoRequest(ctx context.Context, method, path string, body any) (
 	return respBody, nil
 }
 
-// checkErrorResponse inspects a response for API-reported errors:
-// non-2xx HTTP status, a non-zero code field, or a "session" message on an
-// otherwise-successful response (the API sometimes reports session expiry
-// that way).
+// checkErrorResponse inspects a response for API-reported errors.
+// Per the API spec, errors use:
+//   - code: numeric (0 for success, non-zero for error) OR string
+//     (e.g., "session" for auth errors)
+//   - description: human-readable error message (not "message")
+//
+// A "message" field is also accepted as a fallback for the description.
+// Errors are detected on non-2xx HTTP status, on non-zero numeric codes,
+// on the "session" string code, and on any string code carrying a
+// description (except "0" for success). The description field only appears
+// in the top-level response envelope on errors; successful responses with
+// code 0 never include a description at the envelope level (nested objects
+// like Job may have a description field, which is unrelated).
 func checkErrorResponse(statusCode int, respBody []byte) error {
+	var rawErr struct {
+		Code        any    `json:"code"`        // int or string
+		Description string `json:"description"` // error message
+		Message     string `json:"message"`     // legacy alias
+	}
+	if err := json.Unmarshal(respBody, &rawErr); err == nil {
+		desc := rawErr.Description
+		if desc == "" {
+			desc = rawErr.Message
+		}
+		code := normalizeCode(rawErr.Code)
+		// Per the spec, a description only ever appears on error responses,
+		// so any non-empty description or non-success code is an error.
+		if codeString(code) == "session" || isErrorCode(code) || desc != "" {
+			return NewAPIError(code, desc, statusCode)
+		}
+	}
 	if statusCode < 200 || statusCode >= 300 {
-		var apiErr struct {
-			Code    int    `json:"code"`
-			Message string `json:"message,omitempty"`
-		}
-		if err := json.Unmarshal(respBody, &apiErr); err == nil && (apiErr.Code != 0 || apiErr.Message != "") {
-			return NewAPIError(apiErr.Code, apiErr.Message, statusCode)
-		}
-		// Fallback: use the raw body but truncate to avoid polluting
-		// error messages with HTML or large payloads.
 		const maxRawMsg = 200
 		msg := string(respBody)
 		if len(msg) > maxRawMsg {
 			msg = msg[:maxRawMsg]
 		}
-		return NewAPIError(0, msg, statusCode)
-	}
-
-	var bodyCode struct {
-		Code    int    `json:"code"`
-		Message string `json:"message,omitempty"`
-	}
-	if err := json.Unmarshal(respBody, &bodyCode); err != nil {
-		return nil
-	}
-	if bodyCode.Code != 0 {
-		return NewAPIError(bodyCode.Code, bodyCode.Message, statusCode)
-	}
-	if bodyCode.Message == "session" {
-		return NewAPIError(bodyCode.Code, bodyCode.Message, statusCode)
+		return NewAPIError(nil, msg, statusCode)
 	}
 	return nil
+}
+
+// normalizeCode converts a decoded JSON code value into an int for numeric
+// codes (JSON numbers decode to float64 in an interface{}) and keeps string
+// codes as-is. A raw int is also accepted (Go's default json decoder never
+// produces int for an untyped interface{}, but we handle it for robustness).
+func normalizeCode(code any) any {
+	switch v := code.(type) {
+	case float64:
+		return int(v)
+	case int:
+		return v
+	default:
+		return code
+	}
+}
+
+// isErrorCode reports whether a code value indicates an error. Numeric codes
+// are errors when non-zero; string codes are errors when neither "0" nor
+// "session" (any other string code, e.g. "test", is an error).
+func isErrorCode(code any) bool {
+	switch v := code.(type) {
+	case int:
+		return v != 0
+	case string:
+		return v != "session" && v != "0"
+	default:
+		return false
+	}
+}
+
+// codeString returns the string form of a code value, if any.
+func codeString(code any) string {
+	if s, ok := code.(string); ok {
+		return s
+	}
+	return ""
 }
 
 // DoGET performs a GET request.
@@ -212,12 +252,12 @@ func (c *Client) DoGETWithQuery(ctx context.Context, path string, params map[str
 	return c.DoGET(ctx, path+"?"+q.Encode())
 }
 
-// Health checks if the xyops instance is reachable and healthy.
-// Returns (true, nil) when the health endpoint reports ok/primary, (false, nil)
+// Health checks if the xyops instance is reachable and healthy via ping/v1.
+// Returns (true, nil) when the API responds with code 0, (false, nil)
 // when the instance is reachable but not the primary (HTTP 503), and (false, err)
 // for network failures or non-503 API errors.
 func (c *Client) Health(ctx context.Context) (bool, error) {
-	body, err := c.DoGET(ctx, "/health")
+	body, err := c.DoGET(ctx, "ping/v1")
 	if err != nil {
 		var apiErr *APIError
 		if errors.As(err, &apiErr) && apiErr.HTTPStatus == http.StatusServiceUnavailable {
@@ -227,14 +267,13 @@ func (c *Client) Health(ctx context.Context) (bool, error) {
 		return false, err
 	}
 
-	resp := struct {
-		Status  string `json:"status,omitempty"`
-		Primary bool   `json:"primary,omitempty"`
-	}{}
+	var resp struct {
+		Code int `json:"code"`
+	}
 	if err := json.Unmarshal(body, &resp); err != nil {
 		return false, err
 	}
-	return resp.Status == "ok" || resp.Primary, nil
+	return resp.Code == 0, nil
 }
 
 func (c *Client) resolveURL(path string) string {

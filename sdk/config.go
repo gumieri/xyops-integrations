@@ -1,6 +1,9 @@
 package sdk
 
-import "context"
+import (
+	"context"
+	"sort"
+)
 
 // ConfigService
 func (s *ConfigService) Get(ctx context.Context) (map[string]any, error) {
@@ -26,8 +29,34 @@ func (s *ConfigService) Update(ctx context.Context, partial map[string]any) (map
 }
 
 // ServersService
-func (s *ServersService) List(ctx context.Context) ([]Satellite, error) {
-	body, err := s.client.DoPOST(ctx, "get_servers/v1", nil)
+// List returns the connected worker servers. get_servers/v1 returns the
+// servers object keyed by server ID, so the map is flattened and sorted by ID.
+func (s *ServersService) List(ctx context.Context) ([]Server, error) {
+	resp, err := s.listResponse(ctx)
+	if err != nil {
+		return nil, err
+	}
+	servers := make([]Server, 0, len(resp.Servers))
+	for _, srv := range resp.Servers {
+		servers = append(servers, srv)
+	}
+	sort.Slice(servers, func(i, j int) bool { return servers[i].ID < servers[j].ID })
+	return servers, nil
+}
+
+// Masters returns the conductor/peer servers from get_servers/v1.
+func (s *ServersService) Masters(ctx context.Context) (map[string]Conductor, error) {
+	resp, err := s.listResponse(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return resp.Masters, nil
+}
+
+// listResponse fetches and parses the ServerListResponse, shared by List
+// and Masters to avoid duplicate HTTP calls.
+func (s *ServersService) listResponse(ctx context.Context) (*ServerListResponse, error) {
+	body, err := s.client.DoGET(ctx, "get_servers/v1")
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +65,7 @@ func (s *ServersService) List(ctx context.Context) ([]Satellite, error) {
 	if err := unmarshalJSON(body, &resp); err != nil {
 		return nil, err
 	}
-	return resp.Servers, nil
+	return &resp, nil
 }
 
 // SatelliteService (bootstrap)
@@ -46,11 +75,13 @@ func (s *SatelliteService) Config(ctx context.Context, token string) (*Satellite
 		return nil, err
 	}
 
-	var resp SatelliteConfigResponse
-	if err := unmarshalJSON(body, &resp); err != nil {
+	// This endpoint serves the raw config.json document, not a {code, data}
+	// envelope.
+	var cfg SatelliteConfig
+	if err := unmarshalJSON(body, &cfg); err != nil {
 		return nil, err
 	}
-	return resp.Data, nil
+	return &cfg, nil
 }
 
 // Core returns raw tarball bytes for a satellite binary.

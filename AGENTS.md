@@ -28,6 +28,19 @@ Both the TF provider and MCP server use the same `sdk.Client` — the SDK is the
 
 ## Key Gotchas
 
+- **Error envelope**: `code` (int 0=ok OR string like `"session"`/`"test"`) + `description` (NOT `message`)
+- **Session detection**: `code:"session"` (string) on HTTP 200 = auth error; `APIError.IsAuth()` checks code string + 401/403
+- **search_jobs params**: `?query=`, `?sort_by=`, `?sort_dir=` — NOT `q`/`sort`
+- **get_active_jobs filter**: `event`, NOT `event_id`
+- **get_workflow_job_summary filter**: `workflow.job`, NOT `id`
+- **get_jobs response**: `jobs` array, NOT `rows`
+- **get_servers**: GET `get_servers/v1` (not POST); returns `servers` OBJECT keyed by ID + `masters`; `ServersService.List` flattens to sorted `[]Server`
+- **Server model**: `info.os/cpu/memory/virt` nested; NOT flat `os`/`arch`/`status` (legacy `Satellite` type kept for compat)
+- **satellite/config**: plain JSON config.json document, NO `{code, data}` envelope
+- **Health**: `ping/v1`, NOT `/health`
+- **Job model**: `event`/`title` (NOT `event_id`/`event_name`), `Elapsed` is float, `code` may be string
+- **APIKey create**: returns `plain_key` (only exposure); surfaced on returned `APIKey.Key`
+- **get_multiple**: `servers` is an OBJECT keyed by ID; lists also include `channels`, `buckets`, `secrets`; flags `alerts`/`stats`/`serverCache`
 - **Privileges**: `map[string]int` (values 1/0), NOT bool
 - **APIKey.Active**: `int` (1/0), NOT bool
 - **WebHook.Headers**: `[]Header{{Name, Value}}`, NOT `map[string]string`

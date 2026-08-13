@@ -19,16 +19,18 @@ type TriggerOpts struct {
 
 // SearchOpts configures search_jobs/v1.
 type SearchOpts struct {
-	Query  string
-	Limit  int
-	Offset int
-	Sort   string
-	Select []string
+	Query   string // API uses "query", not "q"
+	Limit   int
+	Offset  int
+	SortBy  string // API uses "sort_by", not "sort"
+	SortDir int    // API uses "sort_dir" (1 for ascending, -1 for descending)
+	Select  []string
+	Verbose bool
 }
 
 // ActiveJobOpts configures get_active_jobs/v1.
 type ActiveJobOpts struct {
-	EventID string
+	EventID string // Note: API filter name is "event", not "event_id"
 	Limit   int
 	Offset  int
 }
@@ -81,7 +83,7 @@ func (s *JobsService) GetActive(ctx context.Context, opts *ActiveJobOpts) ([]Job
 	params := map[string]string{}
 	if opts != nil {
 		if opts.EventID != "" {
-			params["event_id"] = opts.EventID
+			params["event"] = opts.EventID // API uses "event", not "event_id"
 		}
 		if opts.Limit > 0 {
 			params["limit"] = strconv.Itoa(opts.Limit)
@@ -120,7 +122,7 @@ func (s *JobsService) GetActiveSummary(ctx context.Context) (map[string]any, err
 }
 
 func (s *JobsService) GetWorkflowSummary(ctx context.Context, jobID string) (map[string]any, error) {
-	body, err := s.client.DoGETWithQuery(ctx, "get_workflow_job_summary/v1", map[string]string{"id": jobID})
+	body, err := s.client.DoGETWithQuery(ctx, "get_workflow_job_summary/v1", map[string]string{"workflow.job": jobID})
 	if err != nil {
 		return nil, err
 	}
@@ -167,12 +169,12 @@ func (s *JobsService) GetBatch(ctx context.Context, ids []string, verbose bool) 
 
 	var resp struct {
 		Code int   `json:"code"`
-		Rows []Job `json:"rows"`
+		Jobs []Job `json:"jobs"`
 	}
 	if err := unmarshalJSON(body, &resp); err != nil {
 		return nil, err
 	}
-	return resp.Rows, nil
+	return resp.Jobs, nil
 }
 
 // Search queries completed jobs with PxQL syntax.
@@ -184,7 +186,7 @@ func (s *JobsService) Search(ctx context.Context, query string) ([]Job, error) {
 func (s *JobsService) SearchWithOpts(ctx context.Context, opts SearchOpts) ([]Job, error) {
 	params := map[string]string{}
 	if opts.Query != "" {
-		params["q"] = opts.Query
+		params["query"] = opts.Query
 	}
 	if opts.Limit > 0 {
 		params["limit"] = strconv.Itoa(opts.Limit)
@@ -192,8 +194,14 @@ func (s *JobsService) SearchWithOpts(ctx context.Context, opts SearchOpts) ([]Jo
 	if opts.Offset > 0 {
 		params["offset"] = strconv.Itoa(opts.Offset)
 	}
-	if opts.Sort != "" {
-		params["sort"] = opts.Sort
+	if opts.SortBy != "" {
+		params["sort_by"] = opts.SortBy
+	}
+	if opts.SortDir != 0 {
+		params["sort_dir"] = strconv.Itoa(opts.SortDir)
+	}
+	if opts.Verbose {
+		params["verbose"] = "1"
 	}
 	if len(opts.Select) > 0 {
 		params["select"] = strings.Join(opts.Select, ",")

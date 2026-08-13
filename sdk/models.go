@@ -44,7 +44,7 @@ type PluginParam struct {
 type Plugin struct {
 	ID      string        `json:"id,omitempty"`
 	Title   string        `json:"title"`
-	Type    string        `json:"type"` // "event" or "monitor"
+	Type    string        `json:"type"` // "event", "monitor", "action", or "scheduler"
 	Command string        `json:"command"`
 	Script  string        `json:"script,omitempty"`
 	Enabled bool          `json:"enabled"`
@@ -71,7 +71,7 @@ type Trigger struct {
 
 // Limit
 type Limit struct {
-	Type     string `json:"type"` // "job", "queue", "retry"
+	Type     string `json:"type"` // "time" (per the API), "job", "queue", "retry"
 	Enabled  bool   `json:"enabled"`
 	Amount   int    `json:"amount,omitempty"`
 	Duration int    `json:"duration,omitempty"`
@@ -80,7 +80,7 @@ type Limit struct {
 
 // Action
 type Action struct {
-	Condition string `json:"condition,omitempty"` // "success", "failure", "always"
+	Condition string `json:"condition,omitempty"` // "error", "success", "always"
 	Type      string `json:"type"`                // "email", "web_hook", "event"
 	Email     string `json:"email,omitempty"`
 	WebHook   string `json:"web_hook,omitempty"`
@@ -231,7 +231,67 @@ type WebHook struct {
 	MaxPerDay     int      `json:"max_per_day,omitempty"`
 }
 
-// Satellite represents a connected xysat server.
+// Server represents a connected xySat worker server (get_servers/v1,
+// get_active_servers/v1).
+type Server struct {
+	ID        string     `json:"id,omitempty"`
+	Hostname  string     `json:"hostname,omitempty"`
+	IP        string     `json:"ip,omitempty"`
+	Enabled   bool       `json:"enabled"`
+	Groups    []string   `json:"groups,omitempty"`
+	Title     string     `json:"title,omitempty"`
+	Icon      string     `json:"icon,omitempty"`
+	AutoGroup bool       `json:"autoGroup"`
+	Created   int64      `json:"created,omitempty"`
+	Modified  int64      `json:"modified,omitempty"`
+	SocketID  string     `json:"socket_id,omitempty"`
+	Keywords  string     `json:"keywords,omitempty"`
+	Info      ServerInfo `json:"info,omitempty"`
+}
+
+// ServerInfo carries the runtime system details reported by a server.
+type ServerInfo struct {
+	OS        ServerOS     `json:"os,omitempty"`
+	CPU       ServerCPU    `json:"cpu,omitempty"`
+	Memory    ServerMemory `json:"memory,omitempty"`
+	Virt      ServerVirt   `json:"virt,omitempty"`
+	Satellite string       `json:"satellite,omitempty"` // xySat version
+}
+
+type ServerOS struct {
+	Platform string `json:"platform,omitempty"`
+	Distro   string `json:"distro,omitempty"`
+	Release  string `json:"release,omitempty"`
+	Arch     string `json:"arch,omitempty"`
+}
+
+type ServerCPU struct {
+	Cores int    `json:"cores,omitempty"`
+	Combo string `json:"combo,omitempty"`
+}
+
+type ServerMemory struct {
+	Total int64 `json:"total,omitempty"`
+}
+
+type ServerVirt struct {
+	Vendor string `json:"vendor,omitempty"`
+}
+
+// Conductor represents a conductor/peer server in the masters map of
+// get_servers/v1.
+type Conductor struct {
+	ID      string         `json:"id,omitempty"`
+	Online  bool           `json:"online,omitempty"`
+	Master  bool           `json:"master,omitempty"`
+	Date    int64          `json:"date,omitempty"`
+	Version string         `json:"version,omitempty"`
+	Ping    int            `json:"ping,omitempty"`
+	Stats   map[string]any `json:"stats,omitempty"`
+}
+
+// Satellite is a lightweight subset of Server for backward compatibility with
+// the original SDK API (deprecated; use Server in new code).
 type Satellite struct {
 	Hostname string   `json:"hostname"`
 	OS       string   `json:"os"`
@@ -241,27 +301,44 @@ type Satellite struct {
 	Tags     []string `json:"tags,omitempty"`
 }
 
-// SatelliteConfig is the bootstrap response for a satellite.
+// SatelliteConfig is the bootstrap response from satellite/config. Unlike the
+// rest of the API this endpoint serves the raw config.json document (no
+// {code, data} envelope).
 type SatelliteConfig struct {
-	AuthToken string   `json:"auth_token"`
-	Hosts     []string `json:"hosts"`
-	Port      int      `json:"port"`
+	Port      int            `json:"port"`
+	Secure    bool           `json:"secure"`
+	Hosts     []string       `json:"hosts"`
+	ServerID  string         `json:"server_id"`
+	AuthToken string         `json:"auth_token"`
+	Initial   map[string]any `json:"initial,omitempty"`
 }
 
 // Job
+// Field names follow the API's Job object: event (not event_id), title (not
+// event_name). Elapsed and Started may be fractional (fractional Unix epoch
+// seconds), while created/completed are integer Unix epoch seconds.
 type Job struct {
-	ID        string `json:"id,omitempty"`
-	EventID   string `json:"event_id,omitempty"`
-	EventName string `json:"event_name,omitempty"`
-	State     string `json:"state,omitempty"`
-	Target    string `json:"target,omitempty"`
-	Params    any    `json:"params,omitempty"`
-	Created   int64  `json:"created,omitempty"`
-	Completed int64  `json:"completed,omitempty"`
-	Elapsed   int    `json:"elapsed,omitempty"`
-	Plugin    string `json:"plugin,omitempty"`
-	Tag       string `json:"tag,omitempty"`
-	Token     string `json:"token,omitempty"` // log access token
+	ID          string  `json:"id,omitempty"`
+	Event       string  `json:"event,omitempty"`
+	Title       string  `json:"title,omitempty"`
+	State       string  `json:"state,omitempty"`
+	Target      string  `json:"target,omitempty"`
+	Params      any     `json:"params,omitempty"`
+	Created     int64   `json:"created,omitempty"`
+	Completed   int64   `json:"completed,omitempty"`
+	Elapsed     float64 `json:"elapsed,omitempty"`
+	Code        any     `json:"code,omitempty"` // result code: 0, "warning", "critical", "abort"
+	Description string  `json:"description,omitempty"`
+	Plugin      string  `json:"plugin,omitempty"`
+	Type        string  `json:"type,omitempty"` // "event" or "workflow"
+	Category    string  `json:"category,omitempty"`
+	Source      string  `json:"source,omitempty"`
+	Progress    float64 `json:"progress,omitempty"`
+	Tag         string  `json:"tag,omitempty"`
+	Token       string  `json:"token,omitempty"` // log access token
+	Server      string  `json:"server,omitempty"`
+	Username    string  `json:"username,omitempty"`
+	Started     float64 `json:"started,omitempty"` // fractional Unix seconds
 }
 
 // TriggerResult is the response from run_event/v1.
@@ -362,8 +439,9 @@ type RoleListResponse struct {
 }
 
 type APIKeyResponse struct {
-	Code   int     `json:"code"`
-	APIKey *APIKey `json:"api_key"`
+	Code     int     `json:"code"`
+	APIKey   *APIKey `json:"api_key"`
+	PlainKey string  `json:"plain_key,omitempty"` // actual key value, only present on create
 }
 
 type APIKeyListResponse struct {
@@ -389,13 +467,9 @@ type ConfigResponse struct {
 }
 
 type ServerListResponse struct {
-	Code    int         `json:"code"`
-	Servers []Satellite `json:"servers"`
-}
-
-type SatelliteConfigResponse struct {
-	Code int              `json:"code"`
-	Data *SatelliteConfig `json:"data,omitempty"`
+	Code    int                  `json:"code"`
+	Servers map[string]Server    `json:"servers"`
+	Masters map[string]Conductor `json:"masters"`
 }
 
 // ListMeta holds pagination metadata from list endpoints.
@@ -405,17 +479,23 @@ type ListMeta struct {
 
 // GetMultipleResponse holds the batch response from get_multiple/v1.
 type GetMultipleResponse struct {
-	Code       int         `json:"code"`
-	Events     []Event     `json:"events,omitempty"`
-	Categories []Category  `json:"categories,omitempty"`
-	Plugins    []Plugin    `json:"plugins,omitempty"`
-	Tags       []Tag       `json:"tags,omitempty"`
-	Groups     []Group     `json:"groups,omitempty"`
-	Monitors   []Monitor   `json:"monitors,omitempty"`
-	Alerts     []Alert     `json:"alerts,omitempty"`
-	Roles      []Role      `json:"roles,omitempty"`
-	APIKeys    []APIKey    `json:"api_keys,omitempty"`
-	WebHooks   []WebHook   `json:"web_hooks,omitempty"`
-	Servers    []Satellite `json:"servers,omitempty"`
-	Jobs       []Job       `json:"jobs,omitempty"`
+	Code       int               `json:"code"`
+	Epoch      int64             `json:"epoch,omitempty"`
+	Events     []Event           `json:"events,omitempty"`
+	Categories []Category        `json:"categories,omitempty"`
+	Plugins    []Plugin          `json:"plugins,omitempty"`
+	Tags       []Tag             `json:"tags,omitempty"`
+	Groups     []Group           `json:"groups,omitempty"`
+	Monitors   []Monitor         `json:"monitors,omitempty"`
+	Alerts     []Alert           `json:"alerts,omitempty"`
+	Roles      []Role            `json:"roles,omitempty"`
+	APIKeys    []APIKey          `json:"api_keys,omitempty"`
+	WebHooks   []WebHook         `json:"web_hooks,omitempty"`
+	Channels   []map[string]any  `json:"channels,omitempty"`
+	Buckets    []map[string]any  `json:"buckets,omitempty"`
+	Secrets    []map[string]any  `json:"secrets,omitempty"`
+	Servers    map[string]Server `json:"servers,omitempty"`
+	Jobs       []Job             `json:"jobs,omitempty"`
+	State      map[string]any    `json:"state,omitempty"`
+	Stats      map[string]any    `json:"stats,omitempty"`
 }

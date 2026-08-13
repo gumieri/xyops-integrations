@@ -160,6 +160,11 @@ func (s *APIKeysService) Create(ctx context.Context, key *APIKey) (*APIKey, erro
 	if err := unmarshalJSON(body, &resp); err != nil {
 		return nil, err
 	}
+	// The API returns the plain key value only once, on create, in the
+	// plain_key property. Surface it on the returned key's Key field.
+	if resp.APIKey != nil && resp.PlainKey != "" {
+		resp.APIKey.Key = resp.PlainKey
+	}
 	return resp.APIKey, nil
 }
 

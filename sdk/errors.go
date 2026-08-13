@@ -3,32 +3,41 @@ package sdk
 import "fmt"
 
 // APIError represents an error returned by the xyops API.
+// Per the API reference, the error envelope contains:
+// - code: Can be a numeric code (0 for success, non-zero for error) OR a string like "session" for auth errors
+// - description: Human-readable error message (not "message")
 type APIError struct {
-	Code       int    `json:"code"`
-	Message    string `json:"message,omitempty"`
-	HTTPStatus int
+	Code        any    `json:"code"`                  // int or string (e.g., "session")
+	Description string `json:"description,omitempty"` // human-readable error message
+	HTTPStatus  int
 }
 
 func (e *APIError) Error() string {
-	if e.Message != "" {
-		return fmt.Sprintf("API error (code=%d, HTTP=%d): %s", e.Code, e.HTTPStatus, e.Message)
+	if e.Description != "" {
+		return fmt.Sprintf("API error (code=%v, HTTP=%d): %s", e.Code, e.HTTPStatus, e.Description)
 	}
-	return fmt.Sprintf("API error (code=%d, HTTP=%d)", e.Code, e.HTTPStatus)
+	return fmt.Sprintf("API error (code=%v, HTTP=%d)", e.Code, e.HTTPStatus)
 }
 
 // IsAuth returns true if this error is an authentication error.
-// The API reports session expiry inconsistently: sometimes via HTTP status
-// (401/403) and sometimes via a "session" message on a 200 response, so both
-// are checked.
+// The API reports session expiry via code="session" (string) on HTTP 200,
+// so we check for that specifically, plus standard HTTP 401/403.
 func (e *APIError) IsAuth() bool {
-	return e.HTTPStatus == 401 || e.HTTPStatus == 403 || e.Message == "session"
+	if e.HTTPStatus == 401 || e.HTTPStatus == 403 {
+		return true
+	}
+	// Check for string "session" code
+	if codeStr, ok := e.Code.(string); ok && codeStr == "session" {
+		return true
+	}
+	return false
 }
 
 // NewAPIError constructs an APIError from the response.
-func NewAPIError(code int, message string, httpStatus int) *APIError {
+func NewAPIError(code any, description string, httpStatus int) *APIError {
 	return &APIError{
-		Code:       code,
-		Message:    message,
-		HTTPStatus: httpStatus,
+		Code:        code,
+		Description: description,
+		HTTPStatus:  httpStatus,
 	}
 }

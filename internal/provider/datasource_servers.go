@@ -48,23 +48,34 @@ func (d *serversDataSource) Schema(_ context.Context, _ datasource.SchemaRequest
 				Description: "List of servers",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
+						"id": schema.StringAttribute{
+							Computed: true,
+						},
 						"hostname": schema.StringAttribute{
 							Computed: true,
 						},
-						"os": schema.StringAttribute{
+						"os_platform": schema.StringAttribute{
 							Computed: true,
 						},
-						"arch": schema.StringAttribute{
+						"os_distro": schema.StringAttribute{
 							Computed: true,
 						},
-						"status": schema.StringAttribute{
+						"os_release": schema.StringAttribute{
+							Computed: true,
+						},
+						"os_arch": schema.StringAttribute{
+							Computed: true,
+						},
+						"cpu_cores": schema.Int64Attribute{
+							Computed: true,
+						},
+						"cpu_combo": schema.StringAttribute{
+							Computed: true,
+						},
+						"enabled": schema.BoolAttribute{
 							Computed: true,
 						},
 						"groups": schema.ListAttribute{
-							Computed:    true,
-							ElementType: types.StringType,
-						},
-						"tags": schema.ListAttribute{
 							Computed:    true,
 							ElementType: types.StringType,
 						},
@@ -85,19 +96,27 @@ func (d *serversDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	elems := make([]attr.Value, 0, len(servers))
 	for _, s := range servers {
 		objVal, ds := types.ObjectValue(map[string]attr.Type{
-			"hostname": types.StringType,
-			"os":       types.StringType,
-			"arch":     types.StringType,
-			"status":   types.StringType,
-			"groups":   types.ListType{ElemType: types.StringType},
-			"tags":     types.ListType{ElemType: types.StringType},
+			"id":          types.StringType,
+			"hostname":    types.StringType,
+			"os_platform": types.StringType,
+			"os_distro":   types.StringType,
+			"os_release":  types.StringType,
+			"os_arch":     types.StringType,
+			"cpu_cores":   types.Int64Type,
+			"cpu_combo":   types.StringType,
+			"enabled":     types.BoolType,
+			"groups":      types.ListType{ElemType: types.StringType},
 		}, map[string]attr.Value{
-			"hostname": types.StringValue(s.Hostname),
-			"os":       types.StringValue(s.OS),
-			"arch":     types.StringValue(s.Arch),
-			"status":   types.StringValue(s.Status),
-			"groups":   stringSetFromSlice(s.Groups),
-			"tags":     stringSetFromSlice(s.Tags),
+			"id":          types.StringValue(s.ID),
+			"hostname":    types.StringValue(s.Hostname),
+			"os_platform": types.StringValue(s.Info.OS.Platform),
+			"os_distro":   types.StringValue(s.Info.OS.Distro),
+			"os_release":  types.StringValue(s.Info.OS.Release),
+			"os_arch":     types.StringValue(s.Info.OS.Arch),
+			"cpu_cores":   types.Int64Value(int64(s.Info.CPU.Cores)),
+			"cpu_combo":   types.StringValue(s.Info.CPU.Combo),
+			"enabled":     types.BoolValue(s.Enabled),
+			"groups":      stringSetFromSlice(s.Groups),
 		})
 		resp.Diagnostics.Append(ds...)
 		elems = append(elems, objVal)
@@ -106,12 +125,16 @@ func (d *serversDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	var data serversDataModel
 	listVal, ds := types.ListValue(types.ObjectType{
 		AttrTypes: map[string]attr.Type{
-			"hostname": types.StringType,
-			"os":       types.StringType,
-			"arch":     types.StringType,
-			"status":   types.StringType,
-			"groups":   types.ListType{ElemType: types.StringType},
-			"tags":     types.ListType{ElemType: types.StringType},
+			"id":          types.StringType,
+			"hostname":    types.StringType,
+			"os_platform": types.StringType,
+			"os_distro":   types.StringType,
+			"os_release":  types.StringType,
+			"os_arch":     types.StringType,
+			"cpu_cores":   types.Int64Type,
+			"cpu_combo":   types.StringType,
+			"enabled":     types.BoolType,
+			"groups":      types.ListType{ElemType: types.StringType},
 		},
 	}, elems)
 	data.Servers = listVal

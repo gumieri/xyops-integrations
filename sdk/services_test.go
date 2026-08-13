@@ -184,7 +184,7 @@ func TestConfigService_Get(t *testing.T) {
 
 func TestServersService_List(t *testing.T) {
 	_, client, cleanup := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write([]byte(`{"code": 0, "servers": [{"hostname": "s1", "os": "linux", "arch": "arm64", "status": "connected"}]}`))
+		_, _ = w.Write([]byte(`{"code": 0, "servers": {"s1": {"id": "s1", "hostname": "centos-9-arm", "enabled": true, "info": {"os": {"platform": "Linux", "distro": "CentOS Stream", "release": "9", "arch": "arm64"}}}}}`))
 	})
 	defer cleanup()
 
@@ -192,7 +192,7 @@ func TestServersService_List(t *testing.T) {
 	if err != nil {
 		t.Fatalf("list: %v", err)
 	}
-	if len(servers) != 1 || servers[0].Hostname != "s1" {
+	if len(servers) != 1 || servers[0].Hostname != "centos-9-arm" {
 		t.Errorf("unexpected servers: %+v", servers)
 	}
 }
@@ -224,5 +224,65 @@ func TestSatelliteService_Token(t *testing.T) {
 	}
 	if token != "tok123" {
 		t.Errorf("expected tok123, got %s", token)
+	}
+}
+
+func TestSatelliteService_Config_FlatJSON(t *testing.T) {
+	_, client, cleanup := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("t") != "boot-token" {
+			t.Errorf("expected token param, got %q", r.URL.Query().Get("t"))
+		}
+		_, _ = w.Write([]byte(`{"port": 5522, "secure": false, "hosts": ["xyops01.example.com"], "server_id": "sabc123def", "auth_token": "tok-abc", "initial": {"title": "Build Worker 01", "groups": ["build"]}}`))
+	})
+	defer cleanup()
+
+	cfg, err := client.Satellite.Config(context.Background(), "boot-token")
+	if err != nil {
+		t.Fatalf("config: %v", err)
+	}
+	if cfg.Port != 5522 {
+		t.Errorf("expected port 5522, got %d", cfg.Port)
+	}
+	if len(cfg.Hosts) != 1 || cfg.Hosts[0] != "xyops01.example.com" {
+		t.Errorf("unexpected hosts: %+v", cfg.Hosts)
+	}
+	if cfg.AuthToken != "tok-abc" {
+		t.Errorf("expected auth_token tok-abc, got %s", cfg.AuthToken)
+	}
+	if cfg.ServerID != "sabc123def" {
+		t.Errorf("expected server_id sabc123def, got %s", cfg.ServerID)
+	}
+}
+
+func TestAPIKeysService_Create_PlainKey(t *testing.T) {
+	_, client, cleanup := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"code": 0, "api_key": {"id": "k1", "title": "deploy"}, "plain_key": "muJm8T6QSzqQzuO6MvbOdtlB"}`))
+	})
+	defer cleanup()
+
+	key, err := client.APIKeys.Create(context.Background(), &APIKey{Title: "deploy"})
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	if key.Key != "muJm8T6QSzqQzuO6MvbOdtlB" {
+		t.Errorf("expected plain_key on create, got %q", key.Key)
+	}
+}
+
+func TestGetMultipleService_ServersObject(t *testing.T) {
+	_, client, cleanup := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"code": 0, "servers": {"s1": {"id": "s1", "hostname": "worker01"}}, "buckets": [{"id": "b1"}]}`))
+	})
+	defer cleanup()
+
+	resp, err := client.GetMultiple.Get(context.Background(), GetMultipleOpts{Lists: []string{"buckets"}, Servers: true})
+	if err != nil {
+		t.Fatalf("get multiple: %v", err)
+	}
+	if len(resp.Servers) != 1 || resp.Servers["s1"].Hostname != "worker01" {
+		t.Errorf("unexpected servers: %+v", resp.Servers)
+	}
+	if len(resp.Buckets) != 1 {
+		t.Errorf("expected 1 bucket, got %d", len(resp.Buckets))
 	}
 }

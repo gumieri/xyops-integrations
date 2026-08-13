@@ -153,7 +153,7 @@ func TestDoGETWithQuery(t *testing.T) {
 func TestSessionMessageOnSuccess(t *testing.T) {
 	_, client, cleanup := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"code": 0, "message": "session"}`))
+		w.Write([]byte(`{"code": "session", "description": "No Session ID or API Key could be found"}`))
 	})
 	defer cleanup()
 
@@ -174,7 +174,7 @@ func TestSessionMessageOnSuccess(t *testing.T) {
 func TestErrorResponseParsing(t *testing.T) {
 	_, client, cleanup := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"code": 1, "message": "not found"}`))
+		w.Write([]byte(`{"code": 1, "description": "not found"}`))
 	})
 	defer cleanup()
 
@@ -188,17 +188,17 @@ func TestErrorResponseParsing(t *testing.T) {
 		t.Fatalf("expected APIError, got %T", err)
 	}
 	if apiErr.Code != 1 {
-		t.Errorf("expected code 1, got %d", apiErr.Code)
+		t.Errorf("expected code 1, got %v", apiErr.Code)
 	}
-	if apiErr.Message != "not found" {
-		t.Errorf("expected message 'not found', got %q", apiErr.Message)
+	if apiErr.Description != "not found" {
+		t.Errorf("expected description 'not found', got %q", apiErr.Description)
 	}
 }
 
 func TestHTTPErrorResponse(t *testing.T) {
 	_, client, cleanup := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"code": 5, "message": "internal error"}`))
+		w.Write([]byte(`{"code": 5, "description": "internal error"}`))
 	})
 	defer cleanup()
 
@@ -215,14 +215,14 @@ func TestHTTPErrorResponse(t *testing.T) {
 		t.Errorf("expected HTTP 500, got %d", apiErr.HTTPStatus)
 	}
 	if apiErr.Code != 5 {
-		t.Errorf("expected code 5, got %d", apiErr.Code)
+		t.Errorf("expected code 5, got %v", apiErr.Code)
 	}
 }
 
 func TestHealth_Healthy(t *testing.T) {
 	_, client, cleanup := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status": "ok", "primary": true}`))
+		w.Write([]byte(`{"code": 0}`))
 	})
 	defer cleanup()
 
@@ -238,7 +238,7 @@ func TestHealth_Healthy(t *testing.T) {
 func TestHealth_NotPrimary(t *testing.T) {
 	_, client, cleanup := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusServiceUnavailable)
-		w.Write([]byte(`{"status": "not primary"}`))
+		w.Write([]byte(`{"code": 1, "description": "not primary"}`))
 	})
 	defer cleanup()
 
@@ -248,6 +248,25 @@ func TestHealth_NotPrimary(t *testing.T) {
 	}
 	if healthy {
 		t.Error("expected not healthy")
+	}
+}
+
+func TestHealth_PingPath(t *testing.T) {
+	_, client, cleanup := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/app/ping/v1" {
+			t.Errorf("expected path /api/app/ping/v1, got %s", r.URL.Path)
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"code": 0}`))
+	})
+	defer cleanup()
+
+	healthy, err := client.Health(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !healthy {
+		t.Error("expected healthy")
 	}
 }
 
@@ -340,12 +359,13 @@ func TestAPIError_IsAuth(t *testing.T) {
 		err    *APIError
 		isAuth bool
 	}{
-		{NewAPIError(0, "session", 200), true},
-		{NewAPIError(1, "session", 200), true},
+		{NewAPIError("session", "No Session ID or API Key could be found", 200), true},
+		{NewAPIError("session", "No Session ID or API Key could be found", 400), true},
 		{NewAPIError(0, "not found", 404), false},
 		{NewAPIError(1, "invalid", 401), true},
 		{NewAPIError(1, "invalid", 403), true},
 		{NewAPIError(1, "invalid", 200), false},
+		{NewAPIError("test", "This is a test error message.", 200), false},
 	}
 	for _, tt := range tests {
 		if got := tt.err.IsAuth(); got != tt.isAuth {
