@@ -20,13 +20,20 @@ func (e *APIError) Error() string {
 }
 
 // IsAuth returns true if this error is an authentication error.
-// The API reports session expiry via code="session" (string) on HTTP 200,
-// so we check for that specifically, plus standard HTTP 401/403.
+// The API reports session expiry via code="session" (string) on HTTP 200 or 403.
+// In v1.0.90, privilege denials return HTTP 403 with code="access"; those are NOT auth.
 func (e *APIError) IsAuth() bool {
-	if e.HTTPStatus == 401 || e.HTTPStatus == 403 {
+	if e.HTTPStatus == 401 {
 		return true
 	}
-	// Check for string "session" code
+	if e.HTTPStatus == 403 {
+		// 403 is auth unless it's the explicit privilege denial code (v1.0.90+)
+		if codeStr, ok := e.Code.(string); ok && codeStr == "access" {
+			return false
+		}
+		return true
+	}
+	// Check for string "session" code (HTTP 200 auth expiry)
 	if codeStr, ok := e.Code.(string); ok && codeStr == "session" {
 		return true
 	}

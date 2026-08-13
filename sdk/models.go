@@ -535,7 +535,7 @@ type ListMeta struct {
 // GetMultipleResponse holds the batch response from get_multiple/v1.
 type GetMultipleResponse struct {
 	Code       int               `json:"code"`
-	Epoch      int64             `json:"epoch,omitempty"`
+	Epoch      float64           `json:"epoch,omitempty"` // fractional Unix seconds
 	Events     []Event           `json:"events,omitempty"`
 	Categories []Category        `json:"categories,omitempty"`
 	Plugins    []Plugin          `json:"plugins,omitempty"`

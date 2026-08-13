@@ -361,6 +361,7 @@ func TestAPIError_IsAuth(t *testing.T) {
 	}{
 		{NewAPIError("session", "No Session ID or API Key could be found", 200), true},
 		{NewAPIError("session", "No Session ID or API Key could be found", 400), true},
+		{NewAPIError("access", "API Key does not have privilege", 403), false},
 		{NewAPIError(0, "not found", 404), false},
 		{NewAPIError(1, "invalid", 401), true},
 		{NewAPIError(1, "invalid", 403), true},

@@ -68,7 +68,7 @@ No delete — clear fields via update. In Terraform this maps to `prevent_destro
 
 ## Batch Endpoint
 
-> **Note (v1.0.49)**: `get_multiple/v1` is **no longer available** — the conductor returns `"Unsupported API: app/api_get_multiple"`. This section is retained for historical/backwards-compatibility reference only. Prefer individual list endpoints (`get_tags/v1`, `get_groups/v1`, ...) which all work on v1.0.49.
+> **Version note**: `get_multiple/v1` was **removed in v1.0.49** (returned `"Unsupported API"`) and **restored in v1.0.90**. `epoch` is fractional (float64) in v1.0.90. The SDK handles both versions.
 
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
@@ -90,9 +90,10 @@ No delete — clear fields via update. In Terraform this maps to `prevent_destro
 
 ## Error Handling
 
-- `code != 0` or a string code (e.g. `"session"`, `"test"`) → structured error with the `description` field (a legacy `message` field is also honored as a fallback).
+- `code != 0` or a string code (e.g. `"session"`, `"test"`, `"access"`) → structured error with the `description` field (a legacy `message` field is also honored as a fallback).
 - HTTP 4xx/5xx → JSON body parsed for `code`/`description`; fallback uses raw body.
 - Auth errors: HTTP 401/403, or a string code of `"session"` (e.g. on a 200 response) — `APIError.IsAuth()` covers all three.
+- Privilege denials: v1.0.90 returns HTTP 403 with `code:"access"` (e.g. `API Key "default" does not have the "Create Tags" privilege`). `IsAuth()` returns **false** for these — it's a permission denial, not an invalid session.
 - The SDK exposes `sdk.APIError{Code (any: int|string), Description, HTTPStatus}` with `IsAuth()`.
 
 ## Field Reference by Resource

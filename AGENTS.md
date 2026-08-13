@@ -40,7 +40,7 @@ Both the TF provider and MCP server use the same `sdk.Client` — the SDK is the
 - **Health**: `ping/v1`, NOT `/health`
 - **Job model**: `event`/`title` (NOT `event_id`/`event_name`), `Elapsed` is float, `Code` may be string (`0` or `"warning"`/`"critical"`/`"abort"`), `Created`/`Completed`/`Started` are **fractional** epoch (float64)
 - **APIKey create**: returns `plain_key` (only exposure); surfaced on returned `APIKey.Key`
-- **get_multiple**: endpoint **unavailable on v1.0.49** — returns `"Unsupported API: app/api_get_multiple"`. Feature existed in earlier versions but removed. Keep SDK for backward compatibility; provider should not expose this datasource.
+- **get_multiple**: **Restored in v1.0.90** (removed in v1.0.49). `Epoch` is fractional float64 in v1.0.90 (was int64). SDK handles both.
 - **Privileges**: `sdk.BoolMap` (custom type) — JSON values may be `true`/`false` OR `1`/`0`. SDK unmarshals both to `map[string]bool` transparently.
 - **APIKey.Active**: `int` (1/0), NOT bool
 - **WebHook.Headers**: `[]Header{{Name, Value}}`, NOT `map[string]string`
@@ -50,6 +50,7 @@ Both the TF provider and MCP server use the same `sdk.Client` — the SDK is the
 - **Plugin.Enabled**: `sdk.EnabledInt` — JSON may be `true`/`false` OR `1`/`0`. SDK unmarshals both to int.
 - **PluginParam.Value**: polymorphic (`any`) — may be string, number, or bool. Provider renders as string.
 - **PluginParam.Required** / **PluginParam.Locked**: nullable `*bool`. Provider treats nil as false.
+- **Privilege errors**: v1.0.90 returns `code:"access"` (HTTP 403) for missing privilege. SDK treats it as a plain `APIError`; `IsAuth()` is false (it's a permission denial, not an invalid session). Cross-version: all polymorphic types (`BoolMap`, `EnabledInt`, `*bool`, fractional epochs) verified against BOTH v1.0.49 and v1.0.90.
 - **Update response**: `write_returns_object = false` — must Get after Update
 - **Monitor read**: GET `get_monitor/v1?id=X` (singular exists, no list+filter needed)
 - **Monitors refactored**: No longer `get_monitors/v1` POST list+filter. Use `get_monitor/v1?id=X` directly.

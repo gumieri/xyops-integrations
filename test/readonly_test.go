@@ -24,6 +24,19 @@ func dumpRaw(t *testing.T, label string, raw []byte) {
 	}
 }
 
+// isAccessDenied reports whether err is a privilege denial rather than an
+// auth failure. In v1.0.90+, privilege errors return HTTP 403 with code="access".
+func isAccessDenied(err error) bool {
+	if err == nil {
+		return false
+	}
+	var apiErr *sdk.APIError
+	if !errors.As(err, &apiErr) {
+		return false
+	}
+	return apiErr.Code == "access" && apiErr.HTTPStatus == 403
+}
+
 func TestReadOnly_Health(t *testing.T) {
 	skipIfNoClient(t)
 	healthy, err := xyopsClient.Health(t.Context())
@@ -110,8 +123,6 @@ func TestReadOnly_Servers(t *testing.T) {
 
 func TestReadOnly_GetMultiple(t *testing.T) {
 	skipIfNoClient(t)
-	t.Skip("get_multiple/v1 unavailable on v1.0.49: API returns 'Unsupported API: app/api_get_multiple'")
-	_ = xyopsClient.GetMultiple // keep reference if endpoint returns in a later version
 	resp, err := xyopsClient.GetMultiple.Get(t.Context(), sdk.GetMultipleOpts{
 		Lists:   []string{"tags", "groups", "events", "categories", "plugins", "monitors", "alerts", "roles", "api_keys", "web_hooks", "channels", "buckets", "secrets"},
 		Servers: true,
@@ -121,7 +132,7 @@ func TestReadOnly_GetMultiple(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get_multiple: %v", err)
 	}
-	t.Logf("code=%d epoch=%d", resp.Code, resp.Epoch)
+	t.Logf("code=%d epoch=%v", resp.Code, resp.Epoch)
 	t.Logf("tags=%d groups=%d events=%d categories=%d plugins=%d monitors=%d alerts=%d roles=%d api_keys=%d web_hooks=%d channels=%d buckets=%d secrets=%d servers=%d",
 		len(resp.Tags), len(resp.Groups), len(resp.Events), len(resp.Categories), len(resp.Plugins),
 		len(resp.Monitors), len(resp.Alerts), len(resp.Roles), len(resp.APIKeys), len(resp.WebHooks),
@@ -249,6 +260,10 @@ func TestReadOnly_ListEnvelopes(t *testing.T) {
 	for _, c := range checks {
 		n, err := c.fn()
 		if err != nil {
+			if isAccessDenied(err) {
+				t.Logf("%s: access denied (non-admin key); skipping", c.name)
+				continue
+			}
 			t.Errorf("%s list: %v", c.name, err)
 			continue
 		}
@@ -260,6 +275,9 @@ func TestReadOnly_AdminReads(t *testing.T) {
 	skipIfNoClient(t)
 	cfg, err := xyopsClient.Config.Get(t.Context())
 	if err != nil {
+		if isAccessDenied(err) {
+			t.Skip("access denied (non-admin key); skip admin reads")
+		}
 		t.Fatalf("admin_get_config: %v", err)
 	}
 	b, _ := json.Marshal(cfg)
