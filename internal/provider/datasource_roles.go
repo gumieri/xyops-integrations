@@ -95,7 +95,7 @@ func (d *rolesDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 			"id":         types.StringValue(r.ID),
 			"title":      types.StringValue(r.Title),
 			"enabled":    types.BoolValue(r.Enabled),
-			"privileges": intMapToBoolMap(r.Privileges),
+			"privileges": boolMapToFrameworkMap(r.Privileges),
 			"categories": stringSetFromSlice(r.Categories),
 			"notes":      types.StringValue(r.Notes),
 		})

@@ -112,7 +112,7 @@ func (d *pluginsDataSource) Read(ctx context.Context, req datasource.ReadRequest
 			"type":    types.StringValue(p.Type),
 			"command": types.StringValue(p.Command),
 			"script":  types.StringValue(p.Script),
-			"enabled": types.BoolValue(p.Enabled),
+			"enabled": types.BoolValue(intToBool(int(p.Enabled))),
 			"uid":     types.StringValue(p.UID),
 			"gid":     types.StringValue(p.GID),
 			"groups":  stringSetFromSlice(p.Groups),

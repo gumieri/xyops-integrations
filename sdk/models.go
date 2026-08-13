@@ -1,5 +1,10 @@
 package sdk
 
+import (
+	"encoding/json"
+	"strconv"
+)
+
 // Resource models for xyops API.
 // Quirks documented inline.
 
@@ -35,9 +40,9 @@ type PluginParam struct {
 	ID       string `json:"id,omitempty"`
 	Type     string `json:"type"`
 	Title    string `json:"title"`
-	Value    string `json:"value,omitempty"`
-	Required bool   `json:"required,omitempty"`
-	Locked   bool   `json:"locked,omitempty"`
+	Value    any    `json:"value,omitempty"`    // polymorphic: string, number, or bool
+	Required *bool  `json:"required,omitempty"` // nullable
+	Locked   *bool  `json:"locked,omitempty"`   // nullable
 }
 
 // Plugin
@@ -47,7 +52,7 @@ type Plugin struct {
 	Type    string        `json:"type"` // "event", "monitor", "action", or "scheduler"
 	Command string        `json:"command"`
 	Script  string        `json:"script,omitempty"`
-	Enabled bool          `json:"enabled"`
+	Enabled EnabledInt    `json:"enabled"` // bool or int (1/0)
 	Params  []PluginParam `json:"params,omitempty"`
 	UID     string        `json:"uid,omitempty"`
 	GID     string        `json:"gid,omitempty"`
@@ -182,37 +187,87 @@ type Alert struct {
 	Notes      string   `json:"notes,omitempty"`
 }
 
-// Role — privileges is map[string]int (values 1/0), NOT bool!
+// BoolMap unmarshals JSON values that may be booleans or integers (1/0).
+type BoolMap map[string]bool
+
+func (m *BoolMap) UnmarshalJSON(b []byte) error {
+	var raw map[string]any
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	*m = make(map[string]bool, len(raw))
+	for k, v := range raw {
+		switch val := v.(type) {
+		case bool:
+			(*m)[k] = val
+		case float64:
+			(*m)[k] = val == 1
+		case int:
+			(*m)[k] = val == 1
+		}
+	}
+	return nil
+}
+
+// EnabledInt unmarshals bool or int (1/0) to int.
+type EnabledInt int
+
+func (e *EnabledInt) UnmarshalJSON(b []byte) error {
+	var raw any
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	switch val := raw.(type) {
+	case bool:
+		if val {
+			*e = 1
+		} else {
+			*e = 0
+		}
+	case float64:
+		*e = EnabledInt(val)
+	case int:
+		*e = EnabledInt(val)
+	case string:
+		n, err := strconv.Atoi(val)
+		if err == nil {
+			*e = EnabledInt(n)
+		}
+	}
+	return nil
+}
+
+// Role — privileges is map[string]bool (accepts true or 1).
 type Role struct {
-	ID         string         `json:"id,omitempty"`
-	Title      string         `json:"title"`
-	Enabled    bool           `json:"enabled"`
-	Privileges map[string]int `json:"privileges"` // values 1/0, NOT bool
-	Categories []string       `json:"categories,omitempty"`
-	Notes      string         `json:"notes,omitempty"`
+	ID         string   `json:"id,omitempty"`
+	Title      string   `json:"title"`
+	Enabled    bool     `json:"enabled"`
+	Privileges BoolMap  `json:"privileges"` // accepts true or 1
+	Categories []string `json:"categories,omitempty"`
+	Notes      string   `json:"notes,omitempty"`
 }
 
 // APIKey — Active is int (1/0), NOT bool. Key is write-only.
 type APIKey struct {
-	ID          string         `json:"id,omitempty"`
-	Title       string         `json:"title"`
-	Description string         `json:"description,omitempty"`
-	Key         string         `json:"key,omitempty"` // write-only, omit on update
-	Active      int            `json:"active"`        // 1/0, NOT bool
-	Privileges  map[string]int `json:"privileges"`    // values 1/0
-	Roles       []string       `json:"roles,omitempty"`
-	Expires     int64          `json:"expires,omitempty"`
+	ID          string   `json:"id,omitempty"`
+	Title       string   `json:"title"`
+	Description string   `json:"description,omitempty"`
+	Key         string   `json:"key,omitempty"` // write-only, omit on update
+	Active      int      `json:"active"`        // 1/0, NOT bool
+	Privileges  BoolMap  `json:"privileges"`    // accepts true or 1
+	Roles       []string `json:"roles,omitempty"`
+	Expires     int64    `json:"expires,omitempty"`
 }
 
 // APIKeyUpdatePayload is the subset of fields sent on update (no Key field).
 type APIKeyUpdatePayload struct {
-	ID          string         `json:"id"`
-	Title       string         `json:"title"`
-	Description string         `json:"description,omitempty"`
-	Active      int            `json:"active"`
-	Privileges  map[string]int `json:"privileges"`
-	Roles       []string       `json:"roles,omitempty"`
-	Expires     int64          `json:"expires,omitempty"`
+	ID          string   `json:"id"`
+	Title       string   `json:"title"`
+	Description string   `json:"description,omitempty"`
+	Active      int      `json:"active"`
+	Privileges  BoolMap  `json:"privileges"`
+	Roles       []string `json:"roles,omitempty"`
+	Expires     int64    `json:"expires,omitempty"`
 }
 
 // WebHook — Headers is []Header, NOT map[string]string.
@@ -324,8 +379,8 @@ type Job struct {
 	State       string  `json:"state,omitempty"`
 	Target      string  `json:"target,omitempty"`
 	Params      any     `json:"params,omitempty"`
-	Created     int64   `json:"created,omitempty"`
-	Completed   int64   `json:"completed,omitempty"`
+	Created     float64 `json:"created,omitempty"`
+	Completed   float64 `json:"completed,omitempty"` // fractional epoch (e.g. 1786631427.094)
 	Elapsed     float64 `json:"elapsed,omitempty"`
 	Code        any     `json:"code,omitempty"` // result code: 0, "warning", "critical", "abort"
 	Description string  `json:"description,omitempty"`

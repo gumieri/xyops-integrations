@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 
+	"github.com/gumieri/xyops-integrations/sdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -85,40 +86,41 @@ func intSetFromSlice(slice []int) types.List {
 	return list
 }
 
-// boolMapToIntMap converts a framework Map of bools to a Go map[string]int (1/0).
-func boolMapToIntMap(m types.Map) map[string]int {
+// frameworkMapToBoolMap converts a framework Map of bools to sdk.BoolMap.
+func frameworkMapToBoolMap(m types.Map) sdk.BoolMap {
 	if m.IsNull() || m.IsUnknown() {
 		return nil
 	}
 
-	out := make(map[string]int, len(m.Elements()))
+	out := make(sdk.BoolMap, len(m.Elements()))
 	for key, elem := range m.Elements() {
 		if b, ok := elem.(types.Bool); ok {
-			if b.ValueBool() {
-				out[key] = 1
-			} else {
-				out[key] = 0
-			}
+			out[key] = b.ValueBool()
 		}
 	}
 	return out
 }
 
-// intMapToBoolMap converts a Go map[string]int (1/0) to a framework Map of bools.
-func intMapToBoolMap(m map[string]int) types.Map {
+// boolMapToFrameworkMap converts sdk.BoolMap to a framework Map of bools.
+func boolMapToFrameworkMap(m sdk.BoolMap) types.Map {
 	if m == nil {
 		return types.MapNull(types.BoolType)
 	}
 
 	elems := make(map[string]types.Bool, len(m))
-	for key, v := range m {
-		elems[key] = types.BoolValue(v == 1)
+	for k, v := range m {
+		elems[k] = types.BoolValue(v)
 	}
 
 	value, diags := types.MapValueFrom(context.Background(), types.BoolType, elems)
 	if diags.HasError() {
-		log.Printf("warning: intMapToBoolMap: dropped diagnostics: %v", diags.Errors())
+		log.Printf("warning: boolMapToFrameworkMap: dropped diagnostics: %v", diags.Errors())
 		return types.MapNull(types.BoolType)
 	}
 	return value
+}
+
+// intToBool converts 1/0 to a bool.
+func intToBool(v int) bool {
+	return v != 0
 }

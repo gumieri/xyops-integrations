@@ -93,7 +93,7 @@ func (r *roleResource) Create(ctx context.Context, req resource.CreateRequest, r
 	role := &sdk.Role{
 		Title:      config.Title.ValueString(),
 		Enabled:    config.Enabled.ValueBool(),
-		Privileges: boolMapToIntMap(config.Privileges),
+		Privileges: frameworkMapToBoolMap(config.Privileges),
 		Categories: stringSliceFromSet(config.Categories),
 		Notes:      config.Notes.ValueString(),
 	}
@@ -146,7 +146,7 @@ func (r *roleResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		ID:         state.ID.ValueString(),
 		Title:      plan.Title.ValueString(),
 		Enabled:    plan.Enabled.ValueBool(),
-		Privileges: boolMapToIntMap(plan.Privileges),
+		Privileges: frameworkMapToBoolMap(plan.Privileges),
 		Categories: stringSliceFromSet(plan.Categories),
 		Notes:      plan.Notes.ValueString(),
 	}
@@ -190,7 +190,7 @@ func roleFromModel(model roleModel, role *sdk.Role) roleModel {
 	model.ID = types.StringValue(role.ID)
 	model.Title = types.StringValue(role.Title)
 	model.Enabled = types.BoolValue(role.Enabled)
-	model.Privileges = intMapToBoolMap(role.Privileges)
+	model.Privileges = boolMapToFrameworkMap(role.Privileges)
 	model.Categories = stringSetFromSlice(role.Categories)
 	model.Notes = types.StringValue(role.Notes)
 	return model

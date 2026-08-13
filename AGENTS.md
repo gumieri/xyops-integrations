@@ -38,18 +38,23 @@ Both the TF provider and MCP server use the same `sdk.Client` — the SDK is the
 - **Server model**: `info.os/cpu/memory/virt` nested; NOT flat `os`/`arch`/`status` (legacy `Satellite` type kept for compat)
 - **satellite/config**: plain JSON config.json document, NO `{code, data}` envelope
 - **Health**: `ping/v1`, NOT `/health`
-- **Job model**: `event`/`title` (NOT `event_id`/`event_name`), `Elapsed` is float, `code` may be string
+- **Job model**: `event`/`title` (NOT `event_id`/`event_name`), `Elapsed` is float, `Code` may be string (`0` or `"warning"`/`"critical"`/`"abort"`), `Created`/`Completed`/`Started` are **fractional** epoch (float64)
 - **APIKey create**: returns `plain_key` (only exposure); surfaced on returned `APIKey.Key`
-- **get_multiple**: `servers` is an OBJECT keyed by ID; lists also include `channels`, `buckets`, `secrets`; flags `alerts`/`stats`/`serverCache`
-- **Privileges**: `map[string]int` (values 1/0), NOT bool
+- **get_multiple**: endpoint **unavailable on v1.0.49** — returns `"Unsupported API: app/api_get_multiple"`. Feature existed in earlier versions but removed. Keep SDK for backward compatibility; provider should not expose this datasource.
+- **Privileges**: `sdk.BoolMap` (custom type) — JSON values may be `true`/`false` OR `1`/`0`. SDK unmarshals both to `map[string]bool` transparently.
 - **APIKey.Active**: `int` (1/0), NOT bool
 - **WebHook.Headers**: `[]Header{{Name, Value}}`, NOT `map[string]string`
 - **APIKey.Key**: write-only, omit on update payload
 - **APIKey read**: POST body `{"id":"..."}`, NOT GET
 - **Plugin upsert**: NO upsert — always `create_plugin/v1` even with `id`
+- **Plugin.Enabled**: `sdk.EnabledInt` — JSON may be `true`/`false` OR `1`/`0`. SDK unmarshals both to int.
+- **PluginParam.Value**: polymorphic (`any`) — may be string, number, or bool. Provider renders as string.
+- **PluginParam.Required** / **PluginParam.Locked**: nullable `*bool`. Provider treats nil as false.
 - **Update response**: `write_returns_object = false` — must Get after Update
 - **Monitor read**: GET `get_monitor/v1?id=X` (singular exists, no list+filter needed)
 - **Monitors refactored**: No longer `get_monitors/v1` POST list+filter. Use `get_monitor/v1?id=X` directly.
+- **get_job/v1 shape**: Returns a workflow-graph document (`{code, job:{type,workflow:{nodes,connections,state,jobs}}}`) for workflow jobs, NOT the flat `Job` record used by `search_jobs`/`get_jobs`. `JobsService.Get` unmarshals into `Job` and will yield mostly-empty fields for workflows. Use `search_jobs`/`get_jobs` for flat job records.
+- **Limits/Actions (empirical, v1.0.49)**: `Event.Limits[].type` values observed in production: `job`, `queue`, `retry`, `time`. `Event.Actions[].condition` observed: `success` (docs mention `error`/`warning`; don't assume only one).
 - **List endpoints**: Exist for ALL resource types via GET `get_*/v1`
 - **Key resolution**: The provider passes human-readable keys through to SDK methods; `sdk.Resolver` exists for key→ID lookups but lives in the SDK layer and is NOT used by the provider. Do NOT resolve keys via plan modifiers.
 - **MCP library**: Use `github.com/modelcontextprotocol/go-sdk` (official, not mark3labs)

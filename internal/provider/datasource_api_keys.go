@@ -100,7 +100,7 @@ func (d *apiKeysDataSource) Read(ctx context.Context, req datasource.ReadRequest
 			"title":       types.StringValue(k.Title),
 			"description": types.StringValue(k.Description),
 			"active":      types.BoolValue(k.Active == 1),
-			"privileges":  intMapToBoolMap(k.Privileges),
+			"privileges":  boolMapToFrameworkMap(k.Privileges),
 			"roles":       stringSetFromSlice(k.Roles),
 			"expires":     types.Int64Value(k.Expires),
 		})

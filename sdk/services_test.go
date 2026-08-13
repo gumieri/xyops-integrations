@@ -124,7 +124,7 @@ func TestRolesService_List(t *testing.T) {
 	if err != nil {
 		t.Fatalf("list: %v", err)
 	}
-	if len(roles) != 1 || roles[0].Privileges["config"] != 1 {
+	if len(roles) != 1 || roles[0].Privileges["config"] != true {
 		t.Errorf("unexpected roles: %+v", roles)
 	}
 }

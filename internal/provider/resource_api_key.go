@@ -103,7 +103,7 @@ func (r *apiKeyResource) Create(ctx context.Context, req resource.CreateRequest,
 		Title:       config.Title.ValueString(),
 		Description: config.Description.ValueString(),
 		Active:      boolToInt(config.Active.ValueBool()),
-		Privileges:  boolMapToIntMap(config.Privileges),
+		Privileges:  frameworkMapToBoolMap(config.Privileges),
 		Roles:       stringSliceFromSet(config.Roles),
 		Expires:     config.Expires.ValueInt64(),
 	}
@@ -158,7 +158,7 @@ func (r *apiKeyResource) Update(ctx context.Context, req resource.UpdateRequest,
 		Title:       plan.Title.ValueString(),
 		Description: plan.Description.ValueString(),
 		Active:      boolToInt(plan.Active.ValueBool()),
-		Privileges:  boolMapToIntMap(plan.Privileges),
+		Privileges:  frameworkMapToBoolMap(plan.Privileges),
 		Roles:       stringSliceFromSet(plan.Roles),
 		Expires:     plan.Expires.ValueInt64(),
 	}
@@ -211,7 +211,7 @@ func apiKeyFromModel(model apiKeyModel, key *sdk.APIKey) apiKeyModel {
 	model.Title = types.StringValue(key.Title)
 	model.Description = types.StringValue(key.Description)
 	model.Active = types.BoolValue(key.Active == 1)
-	model.Privileges = intMapToBoolMap(key.Privileges)
+	model.Privileges = boolMapToFrameworkMap(key.Privileges)
 	model.Roles = stringSetFromSlice(key.Roles)
 	model.Expires = types.Int64Value(key.Expires)
 	return model

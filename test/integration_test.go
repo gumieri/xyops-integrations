@@ -223,7 +223,7 @@ func TestAPIKeyWriteOnly(t *testing.T) {
 	created, err := xyopsClient.APIKeys.Create(t.Context(), &sdk.APIKey{
 		Title:      "it-apikey",
 		Active:     1,
-		Privileges: map[string]int{"all": 1},
+		Privileges: sdk.BoolMap{"all": true},
 	})
 	if err != nil {
 		t.Fatalf("create api key: %v", err)

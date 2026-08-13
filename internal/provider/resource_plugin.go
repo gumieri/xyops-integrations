@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/gumieri/xyops-integrations/sdk"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -139,7 +140,7 @@ func (r *pluginResource) Create(ctx context.Context, req resource.CreateRequest,
 		Type:    config.Type.ValueString(),
 		Command: config.Command.ValueString(),
 		Script:  config.Script.ValueString(),
-		Enabled: config.Enabled.ValueBool(),
+		Enabled: sdk.EnabledInt(boolToInt(config.Enabled.ValueBool())),
 		Params:  pluginParamSliceFromSet(ctx, config.Params),
 		UID:     config.UID.ValueString(),
 		GID:     config.GID.ValueString(),
@@ -197,7 +198,7 @@ func (r *pluginResource) Update(ctx context.Context, req resource.UpdateRequest,
 		Type:    plan.Type.ValueString(),
 		Command: plan.Command.ValueString(),
 		Script:  plan.Script.ValueString(),
-		Enabled: plan.Enabled.ValueBool(),
+		Enabled: sdk.EnabledInt(boolToInt(plan.Enabled.ValueBool())),
 		Params:  pluginParamSliceFromSet(ctx, plan.Params),
 		UID:     plan.UID.ValueString(),
 		GID:     plan.GID.ValueString(),
@@ -253,13 +254,15 @@ func pluginParamSliceFromSet(ctx context.Context, list types.List) []sdk.PluginP
 
 	out := make([]sdk.PluginParam, 0, len(elems))
 	for _, e := range elems {
+		required := e.Required.ValueBool()
+		locked := e.Locked.ValueBool()
 		out = append(out, sdk.PluginParam{
 			ID:       e.ID.ValueString(),
 			Type:     e.Type.ValueString(),
 			Title:    e.Title.ValueString(),
 			Value:    e.Value.ValueString(),
-			Required: e.Required.ValueBool(),
-			Locked:   e.Locked.ValueBool(),
+			Required: &required,
+			Locked:   &locked,
 		})
 	}
 	return out
@@ -274,13 +277,21 @@ func pluginParamSetFromSlice(slice []sdk.PluginParam) types.List {
 
 	elems := make([]attr.Value, 0, len(slice))
 	for _, p := range slice {
+		required := false
+		if p.Required != nil {
+			required = *p.Required
+		}
+		locked := false
+		if p.Locked != nil {
+			locked = *p.Locked
+		}
 		objVal, _ := types.ObjectValue(pluginParamAttrTypes(), map[string]attr.Value{
 			"id":       types.StringValue(p.ID),
 			"type":     types.StringValue(p.Type),
 			"title":    types.StringValue(p.Title),
-			"value":    types.StringValue(p.Value),
-			"required": types.BoolValue(p.Required),
-			"locked":   types.BoolValue(p.Locked),
+			"value":    types.StringValue(fmt.Sprintf("%v", p.Value)),
+			"required": types.BoolValue(required),
+			"locked":   types.BoolValue(locked),
 		})
 		elems = append(elems, objVal)
 	}
@@ -306,7 +317,7 @@ func pluginFromModel(model pluginModel, plugin *sdk.Plugin) pluginModel {
 	model.Type = types.StringValue(plugin.Type)
 	model.Command = types.StringValue(plugin.Command)
 	model.Script = types.StringValue(plugin.Script)
-	model.Enabled = types.BoolValue(plugin.Enabled)
+	model.Enabled = types.BoolValue(intToBool(int(plugin.Enabled)))
 	model.Params = pluginParamSetFromSlice(plugin.Params)
 	model.UID = types.StringValue(plugin.UID)
 	model.GID = types.StringValue(plugin.GID)

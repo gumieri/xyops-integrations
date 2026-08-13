@@ -56,7 +56,7 @@ No delete — clear fields via update. In Terraform this maps to `prevent_destro
 | `get_active_jobs/v1` | GET | List active jobs (queued/ready/active/finishing) with filters + pagination. Filter by `event` (NOT `event_id`); also `state`, `server`, `workflow.job`. |
 | `get_active_job_summary/v1` | GET | Summarize active jobs by event/state/source/targets |
 | `get_workflow_job_summary/v1` | GET | Summarize workflow jobs by node (`workflow.job` filter param required) |
-| `get_job/v1` | GET | Single job details (`id` param; returns `job` + `token` for log access) |
+| `get_job/v1` | GET | Single job details (`id` param; returns `job` + `token` for log access). For **workflow** jobs the `job` document is a graph (`{type, workflow:{nodes,connections,state,jobs}}`), not a flat `Job` record — use `search_jobs`/`get_jobs` for flat records. |
 | `get_jobs/v1` | POST | Batch fetch jobs by IDs (`ids` array, optional `verbose: true`). Response uses `jobs` array (NOT `rows`). |
 | `get_event_history/v1` | GET | Revision history for an event (paginated) |
 | `search_jobs/v1` | GET | Search completed jobs (PxQL/Unbase-style query syntax). Params: `query` (NOT `q`), `offset`, `limit`, `sort_by` (NOT `sort`), `sort_dir` (`1`/`-1`), `verbose`, `select`. |
@@ -67,6 +67,8 @@ No delete — clear fields via update. In Terraform this maps to `prevent_destro
 | `manage_job_tags/v1` | POST | Replace tags on a completed job |
 
 ## Batch Endpoint
+
+> **Note (v1.0.49)**: `get_multiple/v1` is **no longer available** — the conductor returns `"Unsupported API: app/api_get_multiple"`. This section is retained for historical/backwards-compatibility reference only. Prefer individual list endpoints (`get_tags/v1`, `get_groups/v1`, ...) which all work on v1.0.49.
 
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
