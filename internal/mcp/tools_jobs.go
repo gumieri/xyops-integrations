@@ -3,18 +3,18 @@ package mcp
 import (
 	"context"
 
-	"github.com/gumieri/xyops-integrations/internal/client"
+	"github.com/gumieri/xyops-integrations/sdk"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-func registerJobTools(s *mcp.Server, c *client.Client) {
+func registerJobTools(s *mcp.Server, c *sdk.Client) {
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "get_job",
 		Description: "Get a job by ID",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in struct {
 		ID string `json:"id" jsonschema:"the job ID"`
-	}) (*mcp.CallToolResult, *client.Job, error) {
-		return wrapErr(c.Jobs.Get(ctx, in.ID))
+	}) (*mcp.CallToolResult, *sdk.Job, error) {
+		return adaptResult(c.Jobs.Get(ctx, in.ID))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -23,8 +23,8 @@ func registerJobTools(s *mcp.Server, c *client.Client) {
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in struct {
 		IDs     []string `json:"ids" jsonschema:"the job IDs"`
 		Verbose bool     `json:"verbose,omitempty" jsonschema:"include verbose output"`
-	}) (*mcp.CallToolResult, []client.Job, error) {
-		return wrapErr(c.Jobs.GetBatch(ctx, in.IDs, in.Verbose))
+	}) (*mcp.CallToolResult, []sdk.Job, error) {
+		return adaptResult(c.Jobs.GetBatch(ctx, in.IDs, in.Verbose))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -32,8 +32,8 @@ func registerJobTools(s *mcp.Server, c *client.Client) {
 		Description: "Search jobs by query",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in struct {
 		Query string `json:"query" jsonschema:"search query"`
-	}) (*mcp.CallToolResult, []client.Job, error) {
-		return wrapErr(c.Jobs.Search(ctx, in.Query))
+	}) (*mcp.CallToolResult, []sdk.Job, error) {
+		return adaptResult(c.Jobs.Search(ctx, in.Query))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -43,13 +43,13 @@ func registerJobTools(s *mcp.Server, c *client.Client) {
 		EventID string `json:"event_id,omitempty" jsonschema:"filter by event ID"`
 		Limit   int    `json:"limit,omitempty" jsonschema:"limit the number of results"`
 		Offset  int    `json:"offset,omitempty" jsonschema:"offset for pagination"`
-	}) (*mcp.CallToolResult, []client.Job, error) {
-		opts := &client.ActiveJobOpts{
+	}) (*mcp.CallToolResult, []sdk.Job, error) {
+		opts := &sdk.ActiveJobOpts{
 			EventID: in.EventID,
 			Limit:   in.Limit,
 			Offset:  in.Offset,
 		}
-		return wrapErr(c.Jobs.GetActive(ctx, opts))
+		return adaptResult(c.Jobs.GetActive(ctx, opts))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -58,8 +58,8 @@ func registerJobTools(s *mcp.Server, c *client.Client) {
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in struct {
 		EventID string         `json:"event_id" jsonschema:"the event ID to trigger"`
 		Params  map[string]any `json:"params,omitempty" jsonschema:"event parameters"`
-	}) (*mcp.CallToolResult, *client.TriggerResult, error) {
-		return wrapErr(c.Jobs.Trigger(ctx, in.EventID, in.Params))
+	}) (*mcp.CallToolResult, *sdk.TriggerResult, error) {
+		return adaptResult(c.Jobs.Trigger(ctx, in.EventID, in.Params))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -68,7 +68,7 @@ func registerJobTools(s *mcp.Server, c *client.Client) {
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in struct {
 		JobID string `json:"job_id" jsonschema:"the job ID to abort"`
 	}) (*mcp.CallToolResult, string, error) {
-		return wrapErr("aborted", c.Jobs.Abort(ctx, in.JobID))
+		return adaptResult("aborted", c.Jobs.Abort(ctx, in.JobID))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -77,7 +77,7 @@ func registerJobTools(s *mcp.Server, c *client.Client) {
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in struct {
 		JobID string `json:"job_id" jsonschema:"the job ID to delete"`
 	}) (*mcp.CallToolResult, string, error) {
-		return wrapErr("deleted", c.Jobs.Delete(ctx, in.JobID))
+		return adaptResult("deleted", c.Jobs.Delete(ctx, in.JobID))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -86,7 +86,7 @@ func registerJobTools(s *mcp.Server, c *client.Client) {
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in struct {
 		EventID string `json:"event_id" jsonschema:"the event ID"`
 	}) (*mcp.CallToolResult, string, error) {
-		return wrapErr("flushed", c.Jobs.FlushQueue(ctx, in.EventID))
+		return adaptResult("flushed", c.Jobs.FlushQueue(ctx, in.EventID))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -96,6 +96,6 @@ func registerJobTools(s *mcp.Server, c *client.Client) {
 		JobID string   `json:"job_id" jsonschema:"the job ID"`
 		Tags  []string `json:"tags" jsonschema:"the tags to set"`
 	}) (*mcp.CallToolResult, string, error) {
-		return wrapErr("updated", c.Jobs.ManageTags(ctx, in.JobID, in.Tags))
+		return adaptResult("updated", c.Jobs.ManageTags(ctx, in.JobID, in.Tags))
 	})
 }

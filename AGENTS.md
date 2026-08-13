@@ -6,7 +6,7 @@ This Go module (`github.com/gumieri/xyops-integrations`) builds three things fro
 
 | Directory | Purpose |
 |-----------|---------|
-| `internal/client/` | Go SDK — typed API client for xyops conductor REST API |
+| `sdk/` | Go SDK — typed API client for xyops conductor REST API |
 | `internal/provider/` | Terraform provider (terraform-plugin-framework) |
 | `internal/mcp/` | MCP server (official MCP Go SDK) |
 | `cmd/terraform-provider-xyops/` | Provider binary entry point |
@@ -14,8 +14,8 @@ This Go module (`github.com/gumieri/xyops-integrations`) builds three things fro
 
 ## Architecture Rule
 
-The SDK (`internal/client/`) absorbs ALL API quirks so callers get clean Go methods.
-Both the TF provider and MCP server use the same `client.Client` — the SDK is the only layer that talks to the HTTP API.
+The SDK (`sdk/`) absorbs ALL API quirks so callers get clean Go methods.
+Both the TF provider and MCP server use the same `sdk.Client` — the SDK is the only layer that talks to the HTTP API.
 
 ## Implementation Order
 

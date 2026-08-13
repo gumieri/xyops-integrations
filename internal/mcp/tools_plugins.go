@@ -3,16 +3,16 @@ package mcp
 import (
 	"context"
 
-	"github.com/gumieri/xyops-integrations/internal/client"
+	"github.com/gumieri/xyops-integrations/sdk"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-func registerPluginTools(s *mcp.Server, c *client.Client) {
+func registerPluginTools(s *mcp.Server, c *sdk.Client) {
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "list_plugins",
 		Description: "List all plugins",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []client.Plugin, error) {
-		return wrapErr(c.Plugins.List(ctx))
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []sdk.Plugin, error) {
+		return adaptResult(c.Plugins.List(ctx))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -20,22 +20,22 @@ func registerPluginTools(s *mcp.Server, c *client.Client) {
 		Description: "Get a plugin by ID",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in struct {
 		ID string `json:"id" jsonschema:"the plugin ID"`
-	}) (*mcp.CallToolResult, *client.Plugin, error) {
-		return wrapErr(c.Plugins.Get(ctx, in.ID))
+	}) (*mcp.CallToolResult, *sdk.Plugin, error) {
+		return adaptResult(c.Plugins.Get(ctx, in.ID))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "create_plugin",
 		Description: "Create a plugin",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in client.Plugin) (*mcp.CallToolResult, *client.Plugin, error) {
-		return wrapErr(c.Plugins.Create(ctx, &in))
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in sdk.Plugin) (*mcp.CallToolResult, *sdk.Plugin, error) {
+		return adaptResult(c.Plugins.Create(ctx, &in))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "update_plugin",
 		Description: "Update a plugin",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in client.Plugin) (*mcp.CallToolResult, *client.Plugin, error) {
-		return wrapErr(c.Plugins.Update(ctx, &in))
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in sdk.Plugin) (*mcp.CallToolResult, *sdk.Plugin, error) {
+		return adaptResult(c.Plugins.Update(ctx, &in))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -44,6 +44,6 @@ func registerPluginTools(s *mcp.Server, c *client.Client) {
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in struct {
 		ID string `json:"id" jsonschema:"the plugin ID"`
 	}) (*mcp.CallToolResult, string, error) {
-		return wrapErr("deleted", c.Plugins.Delete(ctx, in.ID))
+		return adaptResult("deleted", c.Plugins.Delete(ctx, in.ID))
 	})
 }

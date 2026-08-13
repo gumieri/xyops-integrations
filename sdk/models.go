@@ -1,4 +1,4 @@
-package client
+package sdk
 
 // Resource models for xyops API.
 // Quirks documented inline.
@@ -231,13 +231,6 @@ type WebHook struct {
 	MaxPerDay     int      `json:"max_per_day,omitempty"`
 }
 
-// Config — generic singleton. Uses map[string]any for flexibility.
-type Config struct {
-	ObjectID string         `json:"-"`
-	Code     string         `json:"-"`
-	Raw      map[string]any `json:"-"`
-}
-
 // Satellite represents a connected xysat server.
 type Satellite struct {
 	Hostname string   `json:"hostname"`
@@ -269,12 +262,6 @@ type Job struct {
 	Plugin    string `json:"plugin,omitempty"`
 	Tag       string `json:"tag,omitempty"`
 	Token     string `json:"token,omitempty"` // log access token
-}
-
-// JobSearchResult wraps a search_jobs response.
-type JobSearchResult struct {
-	Rows  []Job `json:"rows"`
-	Total int   `json:"total"`
 }
 
 // TriggerResult is the response from run_event/v1.

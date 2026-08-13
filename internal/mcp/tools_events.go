@@ -3,16 +3,16 @@ package mcp
 import (
 	"context"
 
-	"github.com/gumieri/xyops-integrations/internal/client"
+	"github.com/gumieri/xyops-integrations/sdk"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-func registerEventTools(s *mcp.Server, c *client.Client) {
+func registerEventTools(s *mcp.Server, c *sdk.Client) {
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "list_events",
 		Description: "List all events",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []client.Event, error) {
-		return wrapErr(c.Events.List(ctx))
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []sdk.Event, error) {
+		return adaptResult(c.Events.List(ctx))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -20,22 +20,22 @@ func registerEventTools(s *mcp.Server, c *client.Client) {
 		Description: "Get an event by ID",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in struct {
 		ID string `json:"id" jsonschema:"the event ID"`
-	}) (*mcp.CallToolResult, *client.Event, error) {
-		return wrapErr(c.Events.Get(ctx, in.ID))
+	}) (*mcp.CallToolResult, *sdk.Event, error) {
+		return adaptResult(c.Events.Get(ctx, in.ID))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "create_event",
 		Description: "Create an event",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in client.Event) (*mcp.CallToolResult, *client.Event, error) {
-		return wrapErr(c.Events.Create(ctx, &in))
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in sdk.Event) (*mcp.CallToolResult, *sdk.Event, error) {
+		return adaptResult(c.Events.Create(ctx, &in))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "update_event",
 		Description: "Update an event",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in client.Event) (*mcp.CallToolResult, *client.Event, error) {
-		return wrapErr(c.Events.Update(ctx, &in))
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in sdk.Event) (*mcp.CallToolResult, *sdk.Event, error) {
+		return adaptResult(c.Events.Update(ctx, &in))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -45,7 +45,7 @@ func registerEventTools(s *mcp.Server, c *client.Client) {
 		ID         string `json:"id" jsonschema:"the event ID"`
 		DeleteJobs bool   `json:"delete_jobs,omitempty" jsonschema:"delete the event's jobs too"`
 	}) (*mcp.CallToolResult, string, error) {
-		opts := &client.DeleteEventOpts{DeleteJobs: in.DeleteJobs}
-		return wrapErr("deleted", c.Events.Delete(ctx, in.ID, opts))
+		opts := &sdk.DeleteEventOpts{DeleteJobs: in.DeleteJobs}
+		return adaptResult("deleted", c.Events.Delete(ctx, in.ID, opts))
 	})
 }

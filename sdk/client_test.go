@@ -1,8 +1,9 @@
-package client
+package sdk
 
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -292,8 +293,7 @@ func TestAPIError_IsAuth(t *testing.T) {
 
 // asAPIError extracts an *APIError from an error chain.
 func asAPIError(err error, target **APIError) bool {
-	if e, ok := err.(*APIError); ok {
-		*target = e
+	if errors.As(err, target) {
 		return true
 	}
 	return false

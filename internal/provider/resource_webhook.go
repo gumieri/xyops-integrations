@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 
-	"github.com/gumieri/xyops-integrations/internal/client"
+	"github.com/gumieri/xyops-integrations/sdk"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -15,7 +15,7 @@ import (
 )
 
 type webHookResource struct {
-	client *client.Client
+	client *sdk.Client
 }
 
 func NewWebHookResource() resource.Resource {
@@ -27,11 +27,11 @@ func (r *webHookResource) Configure(_ context.Context, req resource.ConfigureReq
 		return
 	}
 
-	c, ok := req.ProviderData.(*client.Client)
+	c, ok := req.ProviderData.(*sdk.Client)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			"Expected *client.Client, got: %T. Please report this bug to the provider developers.",
+			"Expected *sdk.Client, got: %T. Please report this bug to the provider developers.",
 		)
 		return
 	}
@@ -148,7 +148,7 @@ func (r *webHookResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	hook := &client.WebHook{
+	hook := &sdk.WebHook{
 		Title:         config.Title.ValueString(),
 		Enabled:       config.Enabled.ValueBool(),
 		URL:           config.URL.ValueString(),
@@ -206,7 +206,7 @@ func (r *webHookResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	hook := &client.WebHook{
+	hook := &sdk.WebHook{
 		ID:            state.ID.ValueString(),
 		Title:         plan.Title.ValueString(),
 		Enabled:       plan.Enabled.ValueBool(),
@@ -256,7 +256,7 @@ func (r *webHookResource) ImportState(ctx context.Context, req resource.ImportSt
 	resp.Diagnostics.Append(diags...)
 }
 
-func headerSliceFromSet(list types.List) []client.Header {
+func headerSliceFromSet(list types.List) []sdk.Header {
 	if list.IsNull() || list.IsUnknown() {
 		return nil
 	}
@@ -267,9 +267,9 @@ func headerSliceFromSet(list types.List) []client.Header {
 		return nil
 	}
 
-	out := make([]client.Header, 0, len(elems))
+	out := make([]sdk.Header, 0, len(elems))
 	for _, e := range elems {
-		out = append(out, client.Header{
+		out = append(out, sdk.Header{
 			Name:  e.Name.ValueString(),
 			Value: e.Value.ValueString(),
 		})
@@ -277,7 +277,7 @@ func headerSliceFromSet(list types.List) []client.Header {
 	return out
 }
 
-func headerSetFromSlice(slice []client.Header) types.List {
+func headerSetFromSlice(slice []sdk.Header) types.List {
 	if slice == nil {
 		return types.ListNull(types.ObjectType{
 			AttrTypes: map[string]attr.Type{
@@ -308,7 +308,7 @@ func headerSetFromSlice(slice []client.Header) types.List {
 	return list
 }
 
-func webHookFromModel(model webHookModel, hook *client.WebHook) webHookModel {
+func webHookFromModel(model webHookModel, hook *sdk.WebHook) webHookModel {
 	model.ID = types.StringValue(hook.ID)
 	model.Title = types.StringValue(hook.Title)
 	model.Enabled = types.BoolValue(hook.Enabled)

@@ -1,13 +1,16 @@
 package mcp
 
 import (
-	"github.com/gumieri/xyops-integrations/internal/client"
+	"github.com/gumieri/xyops-integrations/sdk"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
+// Version is the MCP server implementation version.
+const Version = "0.1.0"
+
 // NewServer creates the xyops MCP server with all tools registered.
-func NewServer(c *client.Client) (*mcp.Server, error) {
-	s := mcp.NewServer(&mcp.Implementation{Name: "xyops", Version: "0.1.0"}, nil)
+func NewServer(c *sdk.Client) (*mcp.Server, error) {
+	s := mcp.NewServer(&mcp.Implementation{Name: "xyops", Version: Version}, nil)
 
 	registerTagTools(s, c)
 	registerGroupTools(s, c)
@@ -26,8 +29,8 @@ func NewServer(c *client.Client) (*mcp.Server, error) {
 	return s, nil
 }
 
-// wrapErr adapts a (T, error) pair into the (result, output, error) shape
+// adaptResult adapts a (T, error) pair into the (result, output, error) shape
 // expected by mcp.ToolHandlerFor.
-func wrapErr[T any](v T, err error) (*mcp.CallToolResult, T, error) {
+func adaptResult[T any](v T, err error) (*mcp.CallToolResult, T, error) {
 	return nil, v, err
 }

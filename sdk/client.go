@@ -1,9 +1,10 @@
-package client
+package sdk
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -120,6 +121,9 @@ func (c *Client) DoRequest(ctx context.Context, method, path string, body any) (
 	if err != nil {
 		return nil, fmt.Errorf("do request: %w", err)
 	}
+	// The body is fully consumed by io.ReadAll below, so a plain Close suffices
+	// for connection reuse. On the ReadAll error path some bytes may be left
+	// unconsumed, but the connection is not reused for that request anyway.
 	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(resp.Body)
@@ -141,14 +145,11 @@ func (c *Client) DoRequest(ctx context.Context, method, path string, body any) (
 
 	// Check code field even on successful HTTP responses
 	var bodyCode struct {
-		Code int `json:"code"`
+		Code    int    `json:"code"`
+		Message string `json:"message,omitempty"`
 	}
 	if err := json.Unmarshal(respBody, &bodyCode); err == nil && bodyCode.Code != 0 {
-		var msg struct {
-			Message string `json:"message"`
-		}
-		json.Unmarshal(respBody, &msg)
-		return nil, NewAPIError(bodyCode.Code, msg.Message, resp.StatusCode)
+		return nil, NewAPIError(bodyCode.Code, bodyCode.Message, resp.StatusCode)
 	}
 
 	return respBody, nil
@@ -170,34 +171,42 @@ func (c *Client) DoGETWithQuery(ctx context.Context, path string, params map[str
 		return c.DoGET(ctx, path)
 	}
 
-	var parts []string
+	q := url.Values{}
 	for k, v := range params {
-		parts = append(parts, url.QueryEscape(k)+"="+url.QueryEscape(v))
+		q.Set(k, v)
 	}
-	return c.DoGET(ctx, path+"?"+strings.Join(parts, "&"))
+	return c.DoGET(ctx, path+"?"+q.Encode())
 }
 
-// Health checks if the xyops instance is reachable.
+// Health checks if the xyops instance is reachable and healthy.
+// Returns (true, nil) when the health endpoint reports ok/primary, (false, nil)
+// when the instance is reachable but not the primary (HTTP 503), and (false, err)
+// for network failures or non-503 API errors.
 func (c *Client) Health(ctx context.Context) (bool, error) {
 	body, err := c.DoGET(ctx, "/health")
 	if err != nil {
-		// Instance not reachable or not primary
-		return false, nil
+		var apiErr *APIError
+		if errors.As(err, &apiErr) && apiErr.HTTPStatus == http.StatusServiceUnavailable {
+			// Reachable but not the primary instance.
+			return false, nil
+		}
+		return false, err
 	}
 
 	resp := struct {
 		Status  string `json:"status,omitempty"`
 		Primary bool   `json:"primary,omitempty"`
 	}{}
-	if err := json.Unmarshal(body, &resp); err == nil {
-		return resp.Status == "ok" || resp.Primary, nil
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return false, err
 	}
-
-	return true, nil
+	return resp.Status == "ok" || resp.Primary, nil
 }
 
 func (c *Client) resolveURL(path string) string {
-	// If path is absolute (/...), append to base URL
+	// If path is absolute (/...), use it directly against the base URL.
+	// Plain concatenation is intentional: url.JoinPath would percent-encode
+	// the '?' in query strings that callers append (e.g. "get_tag/v1?id=t1").
 	if strings.HasPrefix(path, "/") {
 		return c.baseURL.String() + path
 	}

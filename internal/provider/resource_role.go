@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 
-	"github.com/gumieri/xyops-integrations/internal/client"
+	"github.com/gumieri/xyops-integrations/sdk"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
@@ -13,7 +13,7 @@ import (
 )
 
 type roleResource struct {
-	client *client.Client
+	client *sdk.Client
 }
 
 func NewRoleResource() resource.Resource {
@@ -25,11 +25,11 @@ func (r *roleResource) Configure(_ context.Context, req resource.ConfigureReques
 		return
 	}
 
-	c, ok := req.ProviderData.(*client.Client)
+	c, ok := req.ProviderData.(*sdk.Client)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			"Expected *client.Client, got: %T. Please report this bug to the provider developers.",
+			"Expected *sdk.Client, got: %T. Please report this bug to the provider developers.",
 		)
 		return
 	}
@@ -90,7 +90,7 @@ func (r *roleResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	role := &client.Role{
+	role := &sdk.Role{
 		Title:      config.Title.ValueString(),
 		Enabled:    config.Enabled.ValueBool(),
 		Privileges: boolMapToIntMap(config.Privileges),
@@ -142,7 +142,7 @@ func (r *roleResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
-	role := &client.Role{
+	role := &sdk.Role{
 		ID:         state.ID.ValueString(),
 		Title:      plan.Title.ValueString(),
 		Enabled:    plan.Enabled.ValueBool(),
@@ -186,7 +186,7 @@ func (r *roleResource) ImportState(ctx context.Context, req resource.ImportState
 	resp.Diagnostics.Append(diags...)
 }
 
-func roleFromModel(model roleModel, role *client.Role) roleModel {
+func roleFromModel(model roleModel, role *sdk.Role) roleModel {
 	model.ID = types.StringValue(role.ID)
 	model.Title = types.StringValue(role.Title)
 	model.Enabled = types.BoolValue(role.Enabled)

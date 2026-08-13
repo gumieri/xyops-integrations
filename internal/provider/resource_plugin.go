@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 
-	"github.com/gumieri/xyops-integrations/internal/client"
+	"github.com/gumieri/xyops-integrations/sdk"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -14,7 +14,7 @@ import (
 )
 
 type pluginResource struct {
-	client *client.Client
+	client *sdk.Client
 }
 
 func NewPluginResource() resource.Resource {
@@ -26,11 +26,11 @@ func (r *pluginResource) Configure(_ context.Context, req resource.ConfigureRequ
 		return
 	}
 
-	c, ok := req.ProviderData.(*client.Client)
+	c, ok := req.ProviderData.(*sdk.Client)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			"Expected *client.Client, got: %T. Please report this bug to the provider developers.",
+			"Expected *sdk.Client, got: %T. Please report this bug to the provider developers.",
 		)
 		return
 	}
@@ -134,7 +134,7 @@ func (r *pluginResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	plugin := &client.Plugin{
+	plugin := &sdk.Plugin{
 		Title:   config.Title.ValueString(),
 		Type:    config.Type.ValueString(),
 		Command: config.Command.ValueString(),
@@ -191,7 +191,7 @@ func (r *pluginResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	plugin := &client.Plugin{
+	plugin := &sdk.Plugin{
 		ID:      state.ID.ValueString(),
 		Title:   plan.Title.ValueString(),
 		Type:    plan.Type.ValueString(),
@@ -240,7 +240,7 @@ func (r *pluginResource) ImportState(ctx context.Context, req resource.ImportSta
 	resp.Diagnostics.Append(diags...)
 }
 
-func pluginParamSliceFromSet(ctx context.Context, list types.List) []client.PluginParam {
+func pluginParamSliceFromSet(ctx context.Context, list types.List) []sdk.PluginParam {
 	if list.IsNull() || list.IsUnknown() {
 		return nil
 	}
@@ -251,9 +251,9 @@ func pluginParamSliceFromSet(ctx context.Context, list types.List) []client.Plug
 		return nil
 	}
 
-	out := make([]client.PluginParam, 0, len(elems))
+	out := make([]sdk.PluginParam, 0, len(elems))
 	for _, e := range elems {
-		out = append(out, client.PluginParam{
+		out = append(out, sdk.PluginParam{
 			ID:       e.ID.ValueString(),
 			Type:     e.Type.ValueString(),
 			Title:    e.Title.ValueString(),
@@ -265,7 +265,7 @@ func pluginParamSliceFromSet(ctx context.Context, list types.List) []client.Plug
 	return out
 }
 
-func pluginParamSetFromSlice(slice []client.PluginParam) types.List {
+func pluginParamSetFromSlice(slice []sdk.PluginParam) types.List {
 	if slice == nil {
 		return types.ListNull(types.ObjectType{
 			AttrTypes: pluginParamAttrTypes(),
@@ -300,7 +300,7 @@ func pluginParamAttrTypes() map[string]attr.Type {
 	}
 }
 
-func pluginFromModel(model pluginModel, plugin *client.Plugin) pluginModel {
+func pluginFromModel(model pluginModel, plugin *sdk.Plugin) pluginModel {
 	model.ID = types.StringValue(plugin.ID)
 	model.Title = types.StringValue(plugin.Title)
 	model.Type = types.StringValue(plugin.Type)

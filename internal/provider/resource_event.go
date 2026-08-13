@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/gumieri/xyops-integrations/internal/client"
+	"github.com/gumieri/xyops-integrations/sdk"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -15,7 +15,7 @@ import (
 )
 
 type eventResource struct {
-	client *client.Client
+	client *sdk.Client
 }
 
 func NewEventResource() resource.Resource {
@@ -27,11 +27,11 @@ func (r *eventResource) Configure(_ context.Context, req resource.ConfigureReque
 		return
 	}
 
-	c, ok := req.ProviderData.(*client.Client)
+	c, ok := req.ProviderData.(*sdk.Client)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			"Expected *client.Client, got: %T. Please report this bug to the provider developers.",
+			"Expected *sdk.Client, got: %T. Please report this bug to the provider developers.",
 		)
 		return
 	}
@@ -339,8 +339,8 @@ func (r *eventResource) ImportState(ctx context.Context, req resource.ImportStat
 	resp.Diagnostics.Append(diags...)
 }
 
-func eventFromModel(ctx context.Context, m eventModel) (*client.Event, bool) {
-	event := &client.Event{
+func eventFromModel(ctx context.Context, m eventModel) (*sdk.Event, bool) {
+	event := &sdk.Event{
 		Title:      m.Title.ValueString(),
 		Plugin:     m.Plugin.ValueString(),
 		Targets:    stringSliceFromSet(m.Targets),
@@ -366,7 +366,7 @@ func eventFromModel(ctx context.Context, m eventModel) (*client.Event, bool) {
 	}
 
 	if !m.WorkflowJSON.IsNull() && m.WorkflowJSON.ValueString() != "" {
-		var wf client.WorkflowGraph
+		var wf sdk.WorkflowGraph
 		if err := json.Unmarshal([]byte(m.WorkflowJSON.ValueString()), &wf); err != nil {
 			return nil, false
 		}
@@ -376,7 +376,7 @@ func eventFromModel(ctx context.Context, m eventModel) (*client.Event, bool) {
 	return event, true
 }
 
-func eventToModel(m eventModel, event *client.Event) eventModel {
+func eventToModel(m eventModel, event *sdk.Event) eventModel {
 	m.ID = types.StringValue(event.ID)
 	m.Title = types.StringValue(event.Title)
 	m.Plugin = types.StringValue(event.Plugin)
@@ -408,7 +408,7 @@ func eventToModel(m eventModel, event *client.Event) eventModel {
 	return m
 }
 
-func fieldSliceFromSet(ctx context.Context, list types.List) []client.Field {
+func fieldSliceFromSet(ctx context.Context, list types.List) []sdk.Field {
 	if list.IsNull() || list.IsUnknown() {
 		return nil
 	}
@@ -419,9 +419,9 @@ func fieldSliceFromSet(ctx context.Context, list types.List) []client.Field {
 		return nil
 	}
 
-	out := make([]client.Field, 0, len(elems))
+	out := make([]sdk.Field, 0, len(elems))
 	for _, e := range elems {
-		out = append(out, client.Field{
+		out = append(out, sdk.Field{
 			ID:       e.ID.ValueString(),
 			Type:     e.Type.ValueString(),
 			Title:    e.Title.ValueString(),
@@ -433,7 +433,7 @@ func fieldSliceFromSet(ctx context.Context, list types.List) []client.Field {
 	return out
 }
 
-func fieldSetFromSlice(slice []client.Field) types.List {
+func fieldSetFromSlice(slice []sdk.Field) types.List {
 	if slice == nil {
 		return types.ListNull(types.ObjectType{AttrTypes: fieldAttrTypes()})
 	}
@@ -466,7 +466,7 @@ func fieldAttrTypes() map[string]attr.Type {
 	}
 }
 
-func triggerSliceFromSet(ctx context.Context, list types.List) []client.Trigger {
+func triggerSliceFromSet(ctx context.Context, list types.List) []sdk.Trigger {
 	if list.IsNull() || list.IsUnknown() {
 		return nil
 	}
@@ -477,9 +477,9 @@ func triggerSliceFromSet(ctx context.Context, list types.List) []client.Trigger 
 		return nil
 	}
 
-	out := make([]client.Trigger, 0, len(elems))
+	out := make([]sdk.Trigger, 0, len(elems))
 	for _, e := range elems {
-		out = append(out, client.Trigger{
+		out = append(out, sdk.Trigger{
 			Type:     e.Type.ValueString(),
 			Years:    intSliceFromSet(e.Years),
 			Months:   intSliceFromSet(e.Months),
@@ -495,7 +495,7 @@ func triggerSliceFromSet(ctx context.Context, list types.List) []client.Trigger 
 	return out
 }
 
-func triggerSetFromSlice(slice []client.Trigger) types.List {
+func triggerSetFromSlice(slice []sdk.Trigger) types.List {
 	if slice == nil {
 		return types.ListNull(types.ObjectType{AttrTypes: triggerAttrTypes()})
 	}
@@ -536,7 +536,7 @@ func triggerAttrTypes() map[string]attr.Type {
 	}
 }
 
-func limitSliceFromSet(ctx context.Context, list types.List) []client.Limit {
+func limitSliceFromSet(ctx context.Context, list types.List) []sdk.Limit {
 	if list.IsNull() || list.IsUnknown() {
 		return nil
 	}
@@ -547,9 +547,9 @@ func limitSliceFromSet(ctx context.Context, list types.List) []client.Limit {
 		return nil
 	}
 
-	out := make([]client.Limit, 0, len(elems))
+	out := make([]sdk.Limit, 0, len(elems))
 	for _, e := range elems {
-		out = append(out, client.Limit{
+		out = append(out, sdk.Limit{
 			Type:     e.Type.ValueString(),
 			Enabled:  e.Enabled.ValueBool(),
 			Amount:   int(e.Amount.ValueInt64()),
@@ -560,7 +560,7 @@ func limitSliceFromSet(ctx context.Context, list types.List) []client.Limit {
 	return out
 }
 
-func limitSetFromSlice(slice []client.Limit) types.List {
+func limitSetFromSlice(slice []sdk.Limit) types.List {
 	if slice == nil {
 		return types.ListNull(types.ObjectType{AttrTypes: limitAttrTypes()})
 	}
@@ -591,7 +591,7 @@ func limitAttrTypes() map[string]attr.Type {
 	}
 }
 
-func actionSliceFromSet(ctx context.Context, list types.List) []client.Action {
+func actionSliceFromSet(ctx context.Context, list types.List) []sdk.Action {
 	if list.IsNull() || list.IsUnknown() {
 		return nil
 	}
@@ -602,9 +602,9 @@ func actionSliceFromSet(ctx context.Context, list types.List) []client.Action {
 		return nil
 	}
 
-	out := make([]client.Action, 0, len(elems))
+	out := make([]sdk.Action, 0, len(elems))
 	for _, e := range elems {
-		out = append(out, client.Action{
+		out = append(out, sdk.Action{
 			Condition: e.Condition.ValueString(),
 			Type:      e.Type.ValueString(),
 			Email:     e.Email.ValueString(),
@@ -616,7 +616,7 @@ func actionSliceFromSet(ctx context.Context, list types.List) []client.Action {
 	return out
 }
 
-func actionSetFromSlice(slice []client.Action) types.List {
+func actionSetFromSlice(slice []sdk.Action) types.List {
 	if slice == nil {
 		return types.ListNull(types.ObjectType{AttrTypes: actionAttrTypes()})
 	}

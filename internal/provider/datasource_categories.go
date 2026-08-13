@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 
-	"github.com/gumieri/xyops-integrations/internal/client"
+	"github.com/gumieri/xyops-integrations/sdk"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -11,7 +11,7 @@ import (
 )
 
 type categoriesDataSource struct {
-	client *client.Client
+	client *sdk.Client
 }
 
 func NewCategoriesDataSource() datasource.DataSource {
@@ -23,11 +23,11 @@ func (d *categoriesDataSource) Configure(_ context.Context, req datasource.Confi
 		return
 	}
 
-	c, ok := req.ProviderData.(*client.Client)
+	c, ok := req.ProviderData.(*sdk.Client)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Data Source Configure Type",
-			"Expected *client.Client, got: %T. Please report this bug to the provider developers.",
+			"Expected *sdk.Client, got: %T. Please report this bug to the provider developers.",
 		)
 		return
 	}

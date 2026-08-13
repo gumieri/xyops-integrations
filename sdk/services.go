@@ -1,4 +1,4 @@
-package client
+package sdk
 
 // Service types. Each service holds a reference to the client.
 

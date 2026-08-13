@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 
-	"github.com/gumieri/xyops-integrations/internal/client"
+	"github.com/gumieri/xyops-integrations/sdk"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
@@ -13,7 +13,7 @@ import (
 )
 
 type groupResource struct {
-	client *client.Client
+	client *sdk.Client
 }
 
 func NewGroupResource() resource.Resource {
@@ -25,11 +25,11 @@ func (r *groupResource) Configure(_ context.Context, req resource.ConfigureReque
 		return
 	}
 
-	c, ok := req.ProviderData.(*client.Client)
+	c, ok := req.ProviderData.(*sdk.Client)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			"Expected *client.Client, got: %T. Please report this bug to the provider developers.",
+			"Expected *sdk.Client, got: %T. Please report this bug to the provider developers.",
 		)
 		return
 	}
@@ -79,7 +79,7 @@ func (r *groupResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	group := &client.Group{
+	group := &sdk.Group{
 		Title:         config.Title.ValueString(),
 		HostnameMatch: config.HostnameMatch.ValueString(),
 		SortOrder:     int(config.SortOrder.ValueInt64()),
@@ -131,7 +131,7 @@ func (r *groupResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
-	group := &client.Group{
+	group := &sdk.Group{
 		ID:            state.ID.ValueString(),
 		Title:         plan.Title.ValueString(),
 		HostnameMatch: plan.HostnameMatch.ValueString(),
@@ -181,7 +181,7 @@ type groupModel struct {
 	SortOrder     types.Int64  `tfsdk:"sort_order"`
 }
 
-func groupFromModel(model groupModel, group *client.Group) groupModel {
+func groupFromModel(model groupModel, group *sdk.Group) groupModel {
 	model.ID = types.StringValue(group.ID)
 	model.Title = types.StringValue(group.Title)
 	model.HostnameMatch = types.StringValue(group.HostnameMatch)

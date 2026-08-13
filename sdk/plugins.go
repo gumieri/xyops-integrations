@@ -1,4 +1,4 @@
-package client
+package sdk
 
 import "context"
 
@@ -44,12 +44,8 @@ func (s *PluginsService) Create(ctx context.Context, plugin *Plugin) (*Plugin, e
 }
 
 func (s *PluginsService) Update(ctx context.Context, plugin *Plugin) (*Plugin, error) {
-	body, err := s.client.DoPOST(ctx, "update_plugin/v1", plugin)
+	_, err := s.client.DoPOST(ctx, "update_plugin/v1", plugin)
 	if err != nil {
-		return nil, err
-	}
-
-	if err := checkSuccessCode(body); err != nil {
 		return nil, err
 	}
 
@@ -93,18 +89,20 @@ func (s *EventsService) Create(ctx context.Context, event *Event) (*Event, error
 		return s.Update(ctx, event)
 	}
 
-	// Inject workflow markers for workflow-type events.
-	if event.Workflow != nil {
-		event.Plugin = "_workflow"
-		event.Type = "workflow"
+	// Inject workflow markers and default limits on a copy so the caller's
+	// struct is never mutated, even if the request fails. The copy is shallow,
+	// which is safe here: Event fields are value types (the Workflow pointer is
+	// only read, never written by this method).
+	create := *event
+	if create.Workflow != nil {
+		create.Plugin = "_workflow"
+		create.Type = "workflow"
+	}
+	if len(create.Limits) == 0 {
+		create.Limits = DefaultLimits()
 	}
 
-	// Inject default limits when empty.
-	if len(event.Limits) == 0 {
-		event.Limits = DefaultLimits()
-	}
-
-	body, err := s.client.DoPOST(ctx, "create_event/v1", event)
+	body, err := s.client.DoPOST(ctx, "create_event/v1", create)
 	if err != nil {
 		return nil, err
 	}
@@ -117,12 +115,8 @@ func (s *EventsService) Create(ctx context.Context, event *Event) (*Event, error
 }
 
 func (s *EventsService) Update(ctx context.Context, event *Event) (*Event, error) {
-	body, err := s.client.DoPOST(ctx, "update_event/v1", event)
+	_, err := s.client.DoPOST(ctx, "update_event/v1", event)
 	if err != nil {
-		return nil, err
-	}
-
-	if err := checkSuccessCode(body); err != nil {
 		return nil, err
 	}
 
@@ -188,12 +182,8 @@ func (s *MonitorsService) Create(ctx context.Context, monitor *Monitor) (*Monito
 }
 
 func (s *MonitorsService) Update(ctx context.Context, monitor *Monitor) (*Monitor, error) {
-	body, err := s.client.DoPOST(ctx, "update_monitor/v1", monitor)
+	_, err := s.client.DoPOST(ctx, "update_monitor/v1", monitor)
 	if err != nil {
-		return nil, err
-	}
-
-	if err := checkSuccessCode(body); err != nil {
 		return nil, err
 	}
 

@@ -1,8 +1,8 @@
-package client
+package sdk
 
 import "context"
 
-// ConfigService (singleton)
+// ConfigService
 func (s *ConfigService) Get(ctx context.Context) (map[string]any, error) {
 	body, err := s.client.DoPOST(ctx, "admin_get_config/v1", nil)
 	if err != nil {
@@ -17,12 +17,8 @@ func (s *ConfigService) Get(ctx context.Context) (map[string]any, error) {
 }
 
 func (s *ConfigService) Update(ctx context.Context, partial map[string]any) (map[string]any, error) {
-	body, err := s.client.DoPOST(ctx, "admin_update_config/v1", partial)
+	_, err := s.client.DoPOST(ctx, "admin_update_config/v1", partial)
 	if err != nil {
-		return nil, err
-	}
-
-	if err := checkSuccessCode(body); err != nil {
 		return nil, err
 	}
 

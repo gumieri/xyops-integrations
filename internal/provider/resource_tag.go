@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 
-	"github.com/gumieri/xyops-integrations/internal/client"
+	"github.com/gumieri/xyops-integrations/sdk"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -12,7 +12,7 @@ import (
 )
 
 type tagResource struct {
-	client *client.Client
+	client *sdk.Client
 }
 
 func NewTagResource() resource.Resource {
@@ -24,11 +24,11 @@ func (r *tagResource) Configure(_ context.Context, req resource.ConfigureRequest
 		return
 	}
 
-	c, ok := req.ProviderData.(*client.Client)
+	c, ok := req.ProviderData.(*sdk.Client)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			"Expected *client.Client, got: %T. Please report this bug to the provider developers.",
+			"Expected *sdk.Client, got: %T. Please report this bug to the provider developers.",
 		)
 		return
 	}
@@ -67,7 +67,7 @@ func (r *tagResource) Create(ctx context.Context, req resource.CreateRequest, re
 		return
 	}
 
-	tag := &client.Tag{
+	tag := &sdk.Tag{
 		Title: config.Title.ValueString(),
 	}
 
@@ -119,7 +119,7 @@ func (r *tagResource) Update(ctx context.Context, req resource.UpdateRequest, re
 		return
 	}
 
-	tag := &client.Tag{
+	tag := &sdk.Tag{
 		ID:    state.ID.ValueString(),
 		Title: plan.Title.ValueString(),
 	}

@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 
-	"github.com/gumieri/xyops-integrations/internal/client"
+	"github.com/gumieri/xyops-integrations/sdk"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
@@ -14,7 +14,7 @@ import (
 )
 
 type monitorResource struct {
-	client *client.Client
+	client *sdk.Client
 }
 
 func NewMonitorResource() resource.Resource {
@@ -26,11 +26,11 @@ func (r *monitorResource) Configure(_ context.Context, req resource.ConfigureReq
 		return
 	}
 
-	c, ok := req.ProviderData.(*client.Client)
+	c, ok := req.ProviderData.(*sdk.Client)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			"Expected *client.Client, got: %T. Please report this bug to the provider developers.",
+			"Expected *sdk.Client, got: %T. Please report this bug to the provider developers.",
 		)
 		return
 	}
@@ -124,7 +124,7 @@ func (r *monitorResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	monitor := &client.Monitor{
+	monitor := &sdk.Monitor{
 		Title:        config.Title.ValueString(),
 		Source:       config.Source.ValueString(),
 		DataType:     config.DataType.ValueString(),
@@ -183,7 +183,7 @@ func (r *monitorResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	monitor := &client.Monitor{
+	monitor := &sdk.Monitor{
 		ID:           state.ID.ValueString(),
 		Title:        plan.Title.ValueString(),
 		Source:       plan.Source.ValueString(),
@@ -234,7 +234,7 @@ func (r *monitorResource) ImportState(ctx context.Context, req resource.ImportSt
 	resp.Diagnostics.Append(diags...)
 }
 
-func monitorFromModel(model monitorModel, monitor *client.Monitor) monitorModel {
+func monitorFromModel(model monitorModel, monitor *sdk.Monitor) monitorModel {
 	model.ID = types.StringValue(monitor.ID)
 	model.Title = types.StringValue(monitor.Title)
 	model.Source = types.StringValue(monitor.Source)

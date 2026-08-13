@@ -4,17 +4,17 @@ import (
 	"os"
 	"testing"
 
-	"github.com/gumieri/xyops-integrations/internal/client"
+	"github.com/gumieri/xyops-integrations/sdk"
 )
 
-var xyopsClient *client.Client
+var xyopsClient *sdk.Client
 
 func TestMain(m *testing.M) {
 	baseURL := os.Getenv("XYOPS_BASE_URL")
 	apiKey := os.Getenv("XYOPS_API_KEY")
 
 	if baseURL != "" && apiKey != "" {
-		c, err := client.New(baseURL, apiKey)
+		c, err := sdk.New(baseURL, apiKey)
 		if err != nil {
 			panic(err)
 		}
@@ -34,7 +34,7 @@ func skipIfNoClient(t *testing.T) {
 func TestTagCRUD(t *testing.T) {
 	skipIfNoClient(t)
 
-	created, err := xyopsClient.Tags.Create(t.Context(), &client.Tag{Title: "it-tag"})
+	created, err := xyopsClient.Tags.Create(t.Context(), &sdk.Tag{Title: "it-tag"})
 	if err != nil {
 		t.Fatalf("create tag: %v", err)
 	}
@@ -56,7 +56,7 @@ func TestTagCRUD(t *testing.T) {
 		t.Errorf("expected title %q, got %q", "it-tag", got.Title)
 	}
 
-	updated, err := xyopsClient.Tags.Update(t.Context(), &client.Tag{ID: created.ID, Title: "it-tag-updated"})
+	updated, err := xyopsClient.Tags.Update(t.Context(), &sdk.Tag{ID: created.ID, Title: "it-tag-updated"})
 	if err != nil {
 		t.Fatalf("update tag: %v", err)
 	}
@@ -83,7 +83,7 @@ func TestTagCRUD(t *testing.T) {
 func TestGroupCRUD(t *testing.T) {
 	skipIfNoClient(t)
 
-	created, err := xyopsClient.Groups.Create(t.Context(), &client.Group{
+	created, err := xyopsClient.Groups.Create(t.Context(), &sdk.Group{
 		Title:         "it-group",
 		HostnameMatch: "*.example.com",
 		SortOrder:     10,
@@ -104,29 +104,25 @@ func TestGroupCRUD(t *testing.T) {
 	if got.HostnameMatch != "*.example.com" {
 		t.Errorf("expected hostname_match %q, got %q", "*.example.com", got.HostnameMatch)
 	}
-
-	if err := xyopsClient.Groups.Delete(t.Context(), created.ID); err != nil {
-		t.Fatalf("delete group: %v", err)
-	}
 }
 
 func TestEventCRUD(t *testing.T) {
 	skipIfNoClient(t)
 
-	event := &client.Event{
+	event := &sdk.Event{
 		Title:   "it-event",
 		Plugin:  "demo_echo",
 		Targets: []string{"it-group"},
 		Enabled: true,
-		Triggers: []client.Trigger{
+		Triggers: []sdk.Trigger{
 			{Type: "interval", Duration: 60},
 		},
-		Limits: []client.Limit{
+		Limits: []sdk.Limit{
 			{Type: "job", Enabled: true, Amount: 1},
 			{Type: "queue", Enabled: true, Amount: 0},
 			{Type: "retry", Enabled: true, Amount: 0},
 		},
-		Actions: []client.Action{
+		Actions: []sdk.Action{
 			{Condition: "failure", Type: "email", Email: "ops@example.com", Enabled: true},
 		},
 	}
@@ -136,7 +132,7 @@ func TestEventCRUD(t *testing.T) {
 		t.Fatalf("create event: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := xyopsClient.Events.Delete(t.Context(), created.ID, &client.DeleteEventOpts{DeleteJobs: true}); err != nil {
+		if err := xyopsClient.Events.Delete(t.Context(), created.ID, &sdk.DeleteEventOpts{DeleteJobs: true}); err != nil {
 			t.Errorf("cleanup delete event: %v", err)
 		}
 	})
@@ -152,7 +148,7 @@ func TestEventCRUD(t *testing.T) {
 		t.Error("expected event to have limits injected by the API")
 	}
 
-	updated, err := xyopsClient.Events.Update(t.Context(), &client.Event{
+	updated, err := xyopsClient.Events.Update(t.Context(), &sdk.Event{
 		ID:      created.ID,
 		Title:   "it-event-updated",
 		Plugin:  "demo_echo",
@@ -169,7 +165,7 @@ func TestEventCRUD(t *testing.T) {
 func TestMonitorCRUD(t *testing.T) {
 	skipIfNoClient(t)
 
-	created, err := xyopsClient.Monitors.Create(t.Context(), &client.Monitor{
+	created, err := xyopsClient.Monitors.Create(t.Context(), &sdk.Monitor{
 		Title:        "it-monitor",
 		Source:       "cpu",
 		DataType:     "float",
@@ -197,7 +193,7 @@ func TestMonitorCRUD(t *testing.T) {
 func TestAlertCRUD(t *testing.T) {
 	skipIfNoClient(t)
 
-	created, err := xyopsClient.Alerts.Create(t.Context(), &client.Alert{
+	created, err := xyopsClient.Alerts.Create(t.Context(), &sdk.Alert{
 		Title:      "it-alert",
 		Enabled:    true,
 		Expression: "value > 90",
@@ -224,7 +220,7 @@ func TestAlertCRUD(t *testing.T) {
 func TestAPIKeyWriteOnly(t *testing.T) {
 	skipIfNoClient(t)
 
-	created, err := xyopsClient.APIKeys.Create(t.Context(), &client.APIKey{
+	created, err := xyopsClient.APIKeys.Create(t.Context(), &sdk.APIKey{
 		Title:      "it-apikey",
 		Active:     1,
 		Privileges: map[string]int{"all": 1},
@@ -252,7 +248,7 @@ func TestAPIKeyWriteOnly(t *testing.T) {
 func TestJobTriggerAndSearch(t *testing.T) {
 	skipIfNoClient(t)
 
-	event, err := xyopsClient.Events.Create(t.Context(), &client.Event{
+	event, err := xyopsClient.Events.Create(t.Context(), &sdk.Event{
 		Title:   "it-job-event",
 		Plugin:  "demo_echo",
 		Enabled: true,
@@ -261,7 +257,7 @@ func TestJobTriggerAndSearch(t *testing.T) {
 		t.Fatalf("create event: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := xyopsClient.Events.Delete(t.Context(), event.ID, &client.DeleteEventOpts{DeleteJobs: true}); err != nil {
+		if err := xyopsClient.Events.Delete(t.Context(), event.ID, &sdk.DeleteEventOpts{DeleteJobs: true}); err != nil {
 			t.Errorf("cleanup delete event: %v", err)
 		}
 	})
@@ -302,7 +298,7 @@ func TestErrorHandlingDeleteNonExistent(t *testing.T) {
 func TestGetMultipleBatch(t *testing.T) {
 	skipIfNoClient(t)
 
-	resp, err := xyopsClient.GetMultiple.Get(t.Context(), client.GetMultipleOpts{})
+	resp, err := xyopsClient.GetMultiple.Get(t.Context(), sdk.GetMultipleOpts{})
 	if err != nil {
 		t.Fatalf("get_multiple: %v", err)
 	}

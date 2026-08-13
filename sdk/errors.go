@@ -1,4 +1,4 @@
-package client
+package sdk
 
 import "fmt"
 
@@ -17,8 +17,11 @@ func (e *APIError) Error() string {
 }
 
 // IsAuth returns true if this error is an authentication error.
+// The API reports session expiry inconsistently: sometimes via HTTP status
+// (401/403) and sometimes via a "session" message on a 200 response, so both
+// are checked.
 func (e *APIError) IsAuth() bool {
-	return (e.Code != 0 || e.Message == "session") && (e.Message == "session" || e.HTTPStatus == 401 || e.HTTPStatus == 403)
+	return e.HTTPStatus == 401 || e.HTTPStatus == 403 || e.Message == "session"
 }
 
 // NewAPIError constructs an APIError from the response.

@@ -6,7 +6,7 @@ Go SDK, Terraform provider, and MCP server for xyops.
 
 This project provides three components:
 
-1. **Go SDK** (`internal/client/`) — Typed API client for the xyops conductor REST API. Absorbs all API quirks so callers get clean Go methods.
+1. **Go SDK** (`sdk/`) — Typed API client for the xyops conductor REST API. Absorbs all API quirks so callers get clean Go methods.
 2. **Terraform provider** (`internal/provider/`) — Native `terraform-plugin-framework` v1.x provider for managing xyops resources.
 3. **MCP server** (`internal/mcp/`) — stdio-based MCP server enabling Claude/opencode to query and manage xyops resources via tools.
 
@@ -90,14 +90,14 @@ Available MCP tools include: `xyops_list_servers`, `xyops_list_events`, `xyops_s
 
 ```
 xyops-integrations/
-├── internal/client/    # Go SDK (typed API client)
-├── internal/provider/  # Terraform provider logic
-├── internal/mcp/       # MCP server logic
+├── sdk/                 # Go SDK (typed API client, importable: github.com/gumieri/xyops-integrations/sdk)
+├── internal/provider/   # Terraform provider logic
+├── internal/mcp/        # MCP server logic
 ├── cmd/terraform-provider-xyops/main.go  # Provider binary
 ├── cmd/xyops-mcp/main.go                # MCP binary
 ```
 
-The SDK is the foundation — both the TF provider and MCP server share the same `client.Client`.
+The SDK is the foundation — both the TF provider and MCP server share the same `sdk.Client`.
 
 ## Testing
 

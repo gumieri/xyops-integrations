@@ -1,6 +1,11 @@
-package client
+package sdk
 
-import "context"
+import (
+	"context"
+	"fmt"
+	"strconv"
+	"strings"
+)
 
 // TriggerOpts configures a run_event/v1 trigger call.
 type TriggerOpts struct {
@@ -76,10 +81,10 @@ func (s *JobsService) GetActive(ctx context.Context, opts *ActiveJobOpts) ([]Job
 			params["event_id"] = opts.EventID
 		}
 		if opts.Limit > 0 {
-			params["limit"] = itoa(opts.Limit)
+			params["limit"] = strconv.Itoa(opts.Limit)
 		}
 		if opts.Offset > 0 {
-			params["offset"] = itoa(opts.Offset)
+			params["offset"] = strconv.Itoa(opts.Offset)
 		}
 	}
 
@@ -173,16 +178,16 @@ func (s *JobsService) SearchWithOpts(ctx context.Context, opts SearchOpts) ([]Jo
 		params["q"] = opts.Query
 	}
 	if opts.Limit > 0 {
-		params["limit"] = itoa(opts.Limit)
+		params["limit"] = strconv.Itoa(opts.Limit)
 	}
 	if opts.Offset > 0 {
-		params["offset"] = itoa(opts.Offset)
+		params["offset"] = strconv.Itoa(opts.Offset)
 	}
 	if opts.Sort != "" {
 		params["sort"] = opts.Sort
 	}
 	if len(opts.Select) > 0 {
-		params["select"] = joinComma(opts.Select)
+		params["select"] = strings.Join(opts.Select, ",")
 	}
 
 	body, err := s.client.DoGETWithQuery(ctx, "search_jobs/v1", params)
@@ -215,7 +220,10 @@ func (s *JobsService) GetEventHistory(ctx context.Context, eventID string) (map[
 
 func (s *JobsService) Abort(ctx context.Context, jobID string) error {
 	_, err := s.client.DoPOST(ctx, "abort_job/v1", map[string]string{"id": jobID})
-	return err
+	if err != nil {
+		return fmt.Errorf("abort job %s: %w", jobID, err)
+	}
+	return nil
 }
 
 func (s *JobsService) Resume(ctx context.Context, jobID string, params map[string]any) error {
@@ -224,20 +232,32 @@ func (s *JobsService) Resume(ctx context.Context, jobID string, params map[strin
 		payload["params"] = params
 	}
 	_, err := s.client.DoPOST(ctx, "resume_job/v1", payload)
-	return err
+	if err != nil {
+		return fmt.Errorf("resume job %s: %w", jobID, err)
+	}
+	return nil
 }
 
 func (s *JobsService) Delete(ctx context.Context, jobID string) error {
 	_, err := s.client.DoPOST(ctx, "delete_job/v1", map[string]string{"id": jobID})
-	return err
+	if err != nil {
+		return fmt.Errorf("delete job %s: %w", jobID, err)
+	}
+	return nil
 }
 
 func (s *JobsService) FlushQueue(ctx context.Context, eventID string) error {
 	_, err := s.client.DoPOST(ctx, "flush_event_queue/v1", map[string]string{"id": eventID})
-	return err
+	if err != nil {
+		return fmt.Errorf("flush event queue %s: %w", eventID, err)
+	}
+	return nil
 }
 
 func (s *JobsService) ManageTags(ctx context.Context, jobID string, tags []string) error {
 	_, err := s.client.DoPOST(ctx, "manage_job_tags/v1", map[string]any{"id": jobID, "tags": tags})
-	return err
+	if err != nil {
+		return fmt.Errorf("manage job tags %s: %w", jobID, err)
+	}
+	return nil
 }

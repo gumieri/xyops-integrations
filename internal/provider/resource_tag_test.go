@@ -1,14 +1,13 @@
 package provider_test
 
 import (
-	"fmt"
+	"os"
 	"testing"
 
 	"github.com/gumieri/xyops-integrations/internal/provider"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccTagResource(t *testing.T) {
@@ -44,22 +43,19 @@ func testAccPreCheck(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping acceptance test in short mode")
 	}
+
+	if os.Getenv("TF_ACC") == "" {
+		t.Skip("TF_ACC not set; skipping acceptance test")
+	}
+
+	if os.Getenv("XYOPS_BASE_URL") == "" || os.Getenv("XYOPS_API_KEY") == "" {
+		t.Fatal("XYOPS_BASE_URL and XYOPS_API_KEY must be set for acceptance tests")
+	}
 }
 
 func protoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServer, error) {
 	return map[string]func() (tfprotov6.ProviderServer, error){
 		"xyops": providerserver.NewProtocol6WithError(provider.New("test")),
-	}
-}
-
-func testAccImportStateIdFunc(resourceName string) resource.ImportStateIdFunc {
-	return func(s *terraform.State) (string, error) {
-		rs, ok := s.RootModule().Resources[resourceName]
-		if !ok {
-			return "", fmt.Errorf("Resource Not Found: %s", resourceName)
-		}
-
-		return rs.Primary.ID, nil
 	}
 }
 

@@ -1,4 +1,4 @@
-package client
+package sdk
 
 import (
 	"context"
@@ -73,6 +73,10 @@ func (r *Resolver) Resolve(ctx context.Context, resourceType, key string) (strin
 	}
 
 	// Query the list endpoint and rebuild the cache for this type.
+	// All map access is guarded by r.mu, so concurrent Resolve calls may each
+	// trigger a redundant refresh, but they never read partially-written data.
+	// This is a deliberate trade-off: single-flight refresh would add locking
+	// complexity for negligible benefit on list endpoints.
 	if err := r.refresh(ctx, resourceType); err != nil {
 		return "", err
 	}
@@ -167,6 +171,46 @@ func (r *Resolver) listPairs(ctx context.Context, resourceType string) ([]keyIDP
 		out := make([]keyIDPair, 0, len(roles))
 		for _, rl := range roles {
 			out = append(out, keyIDPair{key: rl.Title, id: rl.ID})
+		}
+		return out, nil
+	case "alert":
+		alerts, err := r.client.Alerts.List(ctx)
+		if err != nil {
+			return nil, err
+		}
+		out := make([]keyIDPair, 0, len(alerts))
+		for _, a := range alerts {
+			out = append(out, keyIDPair{key: a.Title, id: a.ID})
+		}
+		return out, nil
+	case "api_key":
+		keys, err := r.client.APIKeys.List(ctx)
+		if err != nil {
+			return nil, err
+		}
+		out := make([]keyIDPair, 0, len(keys))
+		for _, k := range keys {
+			out = append(out, keyIDPair{key: k.Title, id: k.ID})
+		}
+		return out, nil
+	case "webhook":
+		hooks, err := r.client.WebHooks.List(ctx)
+		if err != nil {
+			return nil, err
+		}
+		out := make([]keyIDPair, 0, len(hooks))
+		for _, h := range hooks {
+			out = append(out, keyIDPair{key: h.Title, id: h.ID})
+		}
+		return out, nil
+	case "event":
+		events, err := r.client.Events.List(ctx)
+		if err != nil {
+			return nil, err
+		}
+		out := make([]keyIDPair, 0, len(events))
+		for _, e := range events {
+			out = append(out, keyIDPair{key: e.Title, id: e.ID})
 		}
 		return out, nil
 	default:

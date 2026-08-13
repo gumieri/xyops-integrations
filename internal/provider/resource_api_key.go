@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 
-	"github.com/gumieri/xyops-integrations/internal/client"
+	"github.com/gumieri/xyops-integrations/sdk"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
@@ -13,7 +13,7 @@ import (
 )
 
 type apiKeyResource struct {
-	client *client.Client
+	client *sdk.Client
 }
 
 func NewAPIKeyResource() resource.Resource {
@@ -25,11 +25,11 @@ func (r *apiKeyResource) Configure(_ context.Context, req resource.ConfigureRequ
 		return
 	}
 
-	c, ok := req.ProviderData.(*client.Client)
+	c, ok := req.ProviderData.(*sdk.Client)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			"Expected *client.Client, got: %T. Please report this bug to the provider developers.",
+			"Expected *sdk.Client, got: %T. Please report this bug to the provider developers.",
 		)
 		return
 	}
@@ -99,7 +99,7 @@ func (r *apiKeyResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	key := &client.APIKey{
+	key := &sdk.APIKey{
 		Title:       config.Title.ValueString(),
 		Description: config.Description.ValueString(),
 		Active:      boolToInt(config.Active.ValueBool()),
@@ -153,7 +153,7 @@ func (r *apiKeyResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	key := &client.APIKey{
+	key := &sdk.APIKey{
 		ID:          state.ID.ValueString(),
 		Title:       plan.Title.ValueString(),
 		Description: plan.Description.ValueString(),
@@ -206,7 +206,7 @@ func boolToInt(b bool) int {
 	return 0
 }
 
-func apiKeyFromModel(model apiKeyModel, key *client.APIKey) apiKeyModel {
+func apiKeyFromModel(model apiKeyModel, key *sdk.APIKey) apiKeyModel {
 	model.ID = types.StringValue(key.ID)
 	model.Title = types.StringValue(key.Title)
 	model.Description = types.StringValue(key.Description)

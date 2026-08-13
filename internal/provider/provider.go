@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/gumieri/xyops-integrations/internal/client"
+	"github.com/gumieri/xyops-integrations/sdk"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -62,7 +62,7 @@ func (p *xyopsProvider) Configure(ctx context.Context, req provider.ConfigureReq
 		apiKey = types.StringValue(os.Getenv("XYOPS_API_KEY"))
 	}
 
-	xyopsClient, err := client.New(baseURL.ValueString(), apiKey.ValueString())
+	xyopsClient, err := sdk.New(baseURL.ValueString(), apiKey.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Error creating xyops client", err.Error())
 		return

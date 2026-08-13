@@ -1,4 +1,4 @@
-package client
+package sdk
 
 import "context"
 
@@ -47,12 +47,8 @@ func (s *AlertsService) Create(ctx context.Context, alert *Alert) (*Alert, error
 }
 
 func (s *AlertsService) Update(ctx context.Context, alert *Alert) (*Alert, error) {
-	body, err := s.client.DoPOST(ctx, "update_alert/v1", alert)
+	_, err := s.client.DoPOST(ctx, "update_alert/v1", alert)
 	if err != nil {
-		return nil, err
-	}
-
-	if err := checkSuccessCode(body); err != nil {
 		return nil, err
 	}
 
@@ -109,12 +105,8 @@ func (s *RolesService) Create(ctx context.Context, role *Role) (*Role, error) {
 }
 
 func (s *RolesService) Update(ctx context.Context, role *Role) (*Role, error) {
-	body, err := s.client.DoPOST(ctx, "update_role/v1", role)
+	_, err := s.client.DoPOST(ctx, "update_role/v1", role)
 	if err != nil {
-		return nil, err
-	}
-
-	if err := checkSuccessCode(body); err != nil {
 		return nil, err
 	}
 
@@ -183,12 +175,8 @@ func (s *APIKeysService) Update(ctx context.Context, key *APIKey) (*APIKey, erro
 		Expires:     key.Expires,
 	}
 
-	body, err := s.client.DoPOST(ctx, "update_api_key/v1", payload)
+	_, err := s.client.DoPOST(ctx, "update_api_key/v1", payload)
 	if err != nil {
-		return nil, err
-	}
-
-	if err := checkSuccessCode(body); err != nil {
 		return nil, err
 	}
 
@@ -245,12 +233,8 @@ func (s *WebHooksService) Create(ctx context.Context, hook *WebHook) (*WebHook, 
 }
 
 func (s *WebHooksService) Update(ctx context.Context, hook *WebHook) (*WebHook, error) {
-	body, err := s.client.DoPOST(ctx, "update_web_hook/v1", hook)
+	_, err := s.client.DoPOST(ctx, "update_web_hook/v1", hook)
 	if err != nil {
-		return nil, err
-	}
-
-	if err := checkSuccessCode(body); err != nil {
 		return nil, err
 	}
 

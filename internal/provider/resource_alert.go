@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 
-	"github.com/gumieri/xyops-integrations/internal/client"
+	"github.com/gumieri/xyops-integrations/sdk"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
@@ -14,7 +14,7 @@ import (
 )
 
 type alertResource struct {
-	client *client.Client
+	client *sdk.Client
 }
 
 func NewAlertResource() resource.Resource {
@@ -26,11 +26,11 @@ func (r *alertResource) Configure(_ context.Context, req resource.ConfigureReque
 		return
 	}
 
-	c, ok := req.ProviderData.(*client.Client)
+	c, ok := req.ProviderData.(*sdk.Client)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			"Expected *client.Client, got: %T. Please report this bug to the provider developers.",
+			"Expected *sdk.Client, got: %T. Please report this bug to the provider developers.",
 		)
 		return
 	}
@@ -105,7 +105,7 @@ func (r *alertResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	alert := &client.Alert{
+	alert := &sdk.Alert{
 		Title:      config.Title.ValueString(),
 		Enabled:    config.Enabled.ValueBool(),
 		Expression: config.Expression.ValueString(),
@@ -160,7 +160,7 @@ func (r *alertResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
-	alert := &client.Alert{
+	alert := &sdk.Alert{
 		ID:         state.ID.ValueString(),
 		Title:      plan.Title.ValueString(),
 		Enabled:    plan.Enabled.ValueBool(),
@@ -207,7 +207,7 @@ func (r *alertResource) ImportState(ctx context.Context, req resource.ImportStat
 	resp.Diagnostics.Append(diags...)
 }
 
-func alertFromModel(model alertModel, alert *client.Alert) alertModel {
+func alertFromModel(model alertModel, alert *sdk.Alert) alertModel {
 	model.ID = types.StringValue(alert.ID)
 	model.Title = types.StringValue(alert.Title)
 	model.Enabled = types.BoolValue(alert.Enabled)

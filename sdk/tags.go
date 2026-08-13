@@ -1,4 +1,4 @@
-package client
+package sdk
 
 import "context"
 
@@ -47,12 +47,8 @@ func (s *TagsService) Create(ctx context.Context, tag *Tag) (*Tag, error) {
 }
 
 func (s *TagsService) Update(ctx context.Context, tag *Tag) (*Tag, error) {
-	body, err := s.client.DoPOST(ctx, "update_tag/v1", tag)
+	_, err := s.client.DoPOST(ctx, "update_tag/v1", tag)
 	if err != nil {
-		return nil, err
-	}
-
-	if err := checkSuccessCode(body); err != nil {
 		return nil, err
 	}
 
@@ -109,12 +105,8 @@ func (s *GroupsService) Create(ctx context.Context, group *Group) (*Group, error
 }
 
 func (s *GroupsService) Update(ctx context.Context, group *Group) (*Group, error) {
-	body, err := s.client.DoPOST(ctx, "update_group/v1", group)
+	_, err := s.client.DoPOST(ctx, "update_group/v1", group)
 	if err != nil {
-		return nil, err
-	}
-
-	if err := checkSuccessCode(body); err != nil {
 		return nil, err
 	}
 
@@ -171,12 +163,8 @@ func (s *CategoriesService) Create(ctx context.Context, category *Category) (*Ca
 }
 
 func (s *CategoriesService) Update(ctx context.Context, category *Category) (*Category, error) {
-	body, err := s.client.DoPOST(ctx, "update_category/v1", category)
+	_, err := s.client.DoPOST(ctx, "update_category/v1", category)
 	if err != nil {
-		return nil, err
-	}
-
-	if err := checkSuccessCode(body); err != nil {
 		return nil, err
 	}
 

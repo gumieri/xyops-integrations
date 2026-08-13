@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 
-	"github.com/gumieri/xyops-integrations/internal/client"
+	"github.com/gumieri/xyops-integrations/sdk"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
@@ -13,7 +13,7 @@ import (
 )
 
 type categoryResource struct {
-	client *client.Client
+	client *sdk.Client
 }
 
 func NewCategoryResource() resource.Resource {
@@ -25,11 +25,11 @@ func (r *categoryResource) Configure(_ context.Context, req resource.ConfigureRe
 		return
 	}
 
-	c, ok := req.ProviderData.(*client.Client)
+	c, ok := req.ProviderData.(*sdk.Client)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			"Expected *client.Client, got: %T. Please report this bug to the provider developers.",
+			"Expected *sdk.Client, got: %T. Please report this bug to the provider developers.",
 		)
 		return
 	}
@@ -76,7 +76,7 @@ func (r *categoryResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	category := &client.Category{
+	category := &sdk.Category{
 		Title:   config.Title.ValueString(),
 		Enabled: config.Enabled.ValueBool(),
 	}
@@ -127,7 +127,7 @@ func (r *categoryResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	category := &client.Category{
+	category := &sdk.Category{
 		ID:      state.ID.ValueString(),
 		Title:   plan.Title.ValueString(),
 		Enabled: plan.Enabled.ValueBool(),
@@ -175,7 +175,7 @@ type categoryModel struct {
 	Enabled types.Bool   `tfsdk:"enabled"`
 }
 
-func categoryFromModel(model categoryModel, category *client.Category) categoryModel {
+func categoryFromModel(model categoryModel, category *sdk.Category) categoryModel {
 	model.ID = types.StringValue(category.ID)
 	model.Title = types.StringValue(category.Title)
 	model.Enabled = types.BoolValue(category.Enabled)
