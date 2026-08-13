@@ -44,27 +44,39 @@ type Client struct {
 
 // New creates a new xyops API client.
 func New(baseURL, apiKey string) (*Client, error) {
-	u, err := url.Parse(baseURL)
+	c, err := newClient(baseURL, apiKey, &http.Client{Timeout: defaultTimeout})
 	if err != nil {
-		return nil, fmt.Errorf("invalid base URL %q: %w", baseURL, err)
+		return nil, err
 	}
-
-	c := &Client{
-		baseURL:    u,
-		apiKey:     apiKey,
-		httpClient: &http.Client{Timeout: defaultTimeout},
-	}
-
-	c.initServices()
 	return c, nil
 }
 
 // NewWithHTTPClient creates a client with a custom HTTP client (for testing).
 func NewWithHTTPClient(baseURL, apiKey string, httpClient *http.Client) (*Client, error) {
+	if httpClient == nil {
+		return nil, fmt.Errorf("invalid base URL %q: nil http client", baseURL)
+	}
+	return newClient(baseURL, apiKey, httpClient)
+}
+
+func newClient(baseURL, apiKey string, httpClient *http.Client) (*Client, error) {
 	u, err := url.Parse(baseURL)
 	if err != nil {
 		return nil, fmt.Errorf("invalid base URL %q: %w", baseURL, err)
 	}
+	// url.Parse lowercases the scheme per RFC 3986.
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return nil, fmt.Errorf("invalid base URL %q: scheme must be http or https", baseURL)
+	}
+	if u.Hostname() == "" {
+		return nil, fmt.Errorf("invalid base URL %q: missing host", baseURL)
+	}
+	if u.RawQuery != "" || u.Fragment != "" || u.User != nil {
+		return nil, fmt.Errorf("invalid base URL %q: must not contain query, fragment, or userinfo", baseURL)
+	}
+	// Trim trailing slashes so resolveURL never produces a double slash
+	// before /api/app/. A path after the host is preserved and used as-is.
+	u.Path = strings.TrimRight(u.Path, "/")
 
 	c := &Client{
 		baseURL:    u,
@@ -95,6 +107,8 @@ func (c *Client) initServices() {
 }
 
 // DoRequest performs an HTTP request with auth headers and returns raw bytes.
+// Follows redirects automatically (http.Client default). On HTTP 3xx, 4xx, 5xx,
+// the response body is parsed for code/message and an APIError is returned.
 func (c *Client) DoRequest(ctx context.Context, method, path string, body any) ([]byte, error) {
 	reqURL := c.resolveURL(path)
 
@@ -140,7 +154,14 @@ func (c *Client) DoRequest(ctx context.Context, method, path string, body any) (
 		if err := json.Unmarshal(respBody, &apiErr); err == nil && (apiErr.Code != 0 || apiErr.Message != "") {
 			return nil, NewAPIError(apiErr.Code, apiErr.Message, resp.StatusCode)
 		}
-		return nil, NewAPIError(0, string(respBody), resp.StatusCode)
+		// Fallback: use the raw body but truncate to avoid polluting
+		// error messages with HTML or large payloads.
+		const maxRawMsg = 200
+		msg := string(respBody)
+		if len(msg) > maxRawMsg {
+			msg = msg[:maxRawMsg]
+		}
+		return nil, NewAPIError(0, msg, resp.StatusCode)
 	}
 
 	// Check code field even on successful HTTP responses
@@ -148,10 +169,16 @@ func (c *Client) DoRequest(ctx context.Context, method, path string, body any) (
 		Code    int    `json:"code"`
 		Message string `json:"message,omitempty"`
 	}
-	if err := json.Unmarshal(respBody, &bodyCode); err == nil && bodyCode.Code != 0 {
-		return nil, NewAPIError(bodyCode.Code, bodyCode.Message, resp.StatusCode)
+	if err := json.Unmarshal(respBody, &bodyCode); err == nil {
+		if bodyCode.Code != 0 {
+			return nil, NewAPIError(bodyCode.Code, bodyCode.Message, resp.StatusCode)
+		}
+		// The API sometimes reports session expiry via a "session" message
+		// even on HTTP 200 responses.
+		if bodyCode.Message == "session" {
+			return nil, NewAPIError(bodyCode.Code, bodyCode.Message, resp.StatusCode)
+		}
 	}
-
 	return respBody, nil
 }
 

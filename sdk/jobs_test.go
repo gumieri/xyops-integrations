@@ -22,6 +22,19 @@ func TestJobsService_Trigger(t *testing.T) {
 	}
 }
 
+func TestJobsService_TriggerWithOpts_RequiresKey(t *testing.T) {
+	_, client, cleanup := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		t.Errorf("server should not be called when no match key is provided")
+		w.WriteHeader(http.StatusOK)
+	})
+	defer cleanup()
+
+	_, err := client.Jobs.TriggerWithOpts(context.Background(), TriggerOpts{})
+	if err == nil {
+		t.Fatal("expected error when neither EventID nor EventTitle is set")
+	}
+}
+
 func TestJobsService_Search(t *testing.T) {
 	_, client, cleanup := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

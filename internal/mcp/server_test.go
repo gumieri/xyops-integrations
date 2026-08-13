@@ -19,10 +19,7 @@ func TestNewServer(t *testing.T) {
 		t.Fatalf("failed to create client: %v", err)
 	}
 
-	mcpServer, err := NewServer(c)
-	if err != nil {
-		t.Fatalf("NewServer: %v", err)
-	}
+	mcpServer := NewServer(c)
 	if mcpServer == nil {
 		t.Fatal("expected non-nil server")
 	}

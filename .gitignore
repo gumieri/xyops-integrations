@@ -1,6 +1,6 @@
-# Binaries
-terraform-provider-xyops
-xyops-mcp
+# Binaries (root only)
+/terraform-provider-xyops
+/xyops-mcp
 *.exe
 *.exe~
 *.dll
@@ -10,8 +10,6 @@ xyops-mcp
 *.out
 
 # Go
-# Test binary, built with `go test -c`
-*.test
 # Output of the go coverage tool
 *.coverprofile
 *.html

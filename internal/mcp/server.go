@@ -6,10 +6,11 @@ import (
 )
 
 // Version is the MCP server implementation version.
-const Version = "0.1.0"
+// Overridden by cmd/xyops-mcp from the ldflags-injected main.version.
+var Version = "0.1.0"
 
 // NewServer creates the xyops MCP server with all tools registered.
-func NewServer(c *sdk.Client) (*mcp.Server, error) {
+func NewServer(c *sdk.Client) *mcp.Server {
 	s := mcp.NewServer(&mcp.Implementation{Name: "xyops", Version: Version}, nil)
 
 	registerTagTools(s, c)
@@ -26,7 +27,7 @@ func NewServer(c *sdk.Client) (*mcp.Server, error) {
 	registerConfigTools(s, c)
 	registerJobTools(s, c)
 
-	return s, nil
+	return s
 }
 
 // adaptResult adapts a (T, error) pair into the (result, output, error) shape

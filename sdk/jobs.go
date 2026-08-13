@@ -41,6 +41,9 @@ func (s *JobsService) Trigger(ctx context.Context, eventID string, params map[st
 
 // TriggerWithOpts dispatches an event execution on demand via run_event/v1.
 func (s *JobsService) TriggerWithOpts(ctx context.Context, opts TriggerOpts) (*TriggerResult, error) {
+	if opts.EventID == "" && opts.EventTitle == "" {
+		return nil, fmt.Errorf("trigger event: at least one of EventID or EventTitle is required")
+	}
 	payload := map[string]any{}
 	if opts.EventID != "" {
 		payload["id"] = opts.EventID
@@ -142,10 +145,16 @@ func (s *JobsService) Get(ctx context.Context, jobID string) (*Job, error) {
 	if err := unmarshalJSON(body, &resp); err != nil {
 		return nil, err
 	}
+	if resp.Job == nil {
+		return nil, fmt.Errorf("get job %s: job not found", jobID)
+	}
 	return resp.Job, nil
 }
 
 func (s *JobsService) GetBatch(ctx context.Context, ids []string, verbose bool) ([]Job, error) {
+	if len(ids) == 0 {
+		return nil, fmt.Errorf("get jobs: at least one job ID is required")
+	}
 	payload := map[string]any{"ids": ids}
 	if verbose {
 		payload["verbose"] = true
@@ -255,6 +264,11 @@ func (s *JobsService) FlushQueue(ctx context.Context, eventID string) error {
 }
 
 func (s *JobsService) ManageTags(ctx context.Context, jobID string, tags []string) error {
+	if tags == nil {
+		// Replace the job's tags with an empty array; omitting the field
+		// is undefined by the API, so we send an explicit empty slice.
+		tags = []string{}
+	}
 	_, err := s.client.DoPOST(ctx, "manage_job_tags/v1", map[string]any{"id": jobID, "tags": tags})
 	if err != nil {
 		return fmt.Errorf("manage job tags %s: %w", jobID, err)

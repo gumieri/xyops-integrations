@@ -26,6 +26,48 @@ func TestNew_InvalidURL(t *testing.T) {
 	}
 }
 
+func TestNew_NoScheme(t *testing.T) {
+	_, err := New("example.com", "key")
+	if err == nil {
+		t.Fatal("expected error for URL without scheme")
+	}
+}
+
+func TestNew_NoHost(t *testing.T) {
+	_, err := New("http://", "key")
+	if err == nil {
+		t.Fatal("expected error for URL without host")
+	}
+}
+
+func TestNew_UnsupportedScheme(t *testing.T) {
+	_, err := New("ftp://example.com", "key")
+	if err == nil {
+		t.Fatal("expected error for unsupported scheme")
+	}
+}
+
+func TestNew_TrailingSlash(t *testing.T) {
+	_, err := New("http://example.com/api/", "key")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestNew_QueryRejected(t *testing.T) {
+	_, err := New("http://example.com?x=1", "key")
+	if err == nil {
+		t.Fatal("expected error for base URL with query")
+	}
+}
+
+func TestNew_NilHTTPClient(t *testing.T) {
+	_, err := NewWithHTTPClient("http://example.com", "key", nil)
+	if err == nil {
+		t.Fatal("expected error for nil http client")
+	}
+}
+
 func TestNewWithHTTPClient(t *testing.T) {
 	_, err := NewWithHTTPClient("http://example.com", "key", http.DefaultClient)
 	if err != nil {
@@ -105,6 +147,27 @@ func TestDoGETWithQuery(t *testing.T) {
 	_, err := client.DoGETWithQuery(context.Background(), "test/v1", map[string]string{"id": "abc123"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestSessionMessageOnSuccess(t *testing.T) {
+	_, client, cleanup := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"code": 0, "message": "session"}`))
+	})
+	defer cleanup()
+
+	_, err := client.DoGET(context.Background(), "test/v1")
+	if err == nil {
+		t.Fatal("expected auth error for 'session' message on 200")
+	}
+
+	var apiErr *APIError
+	if !asAPIError(err, &apiErr) {
+		t.Fatalf("expected APIError, got %T", err)
+	}
+	if !apiErr.IsAuth() {
+		t.Errorf("expected IsAuth() true, got false: %v", apiErr)
 	}
 }
 
@@ -293,10 +356,7 @@ func TestAPIError_IsAuth(t *testing.T) {
 
 // asAPIError extracts an *APIError from an error chain.
 func asAPIError(err error, target **APIError) bool {
-	if errors.As(err, target) {
-		return true
-	}
-	return false
+	return errors.As(err, target)
 }
 
 func TestDefaultLimits(t *testing.T) {
