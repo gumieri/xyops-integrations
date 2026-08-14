@@ -11,8 +11,8 @@ func registerEventTools(s *mcp.Server, c *sdk.Client) {
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "list_events",
 		Description: "List all events",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []sdk.Event, error) {
-		return adaptResult(c.Events.List(ctx))
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, ListResult[sdk.Event], error) {
+		return adaptListResult(c.Events.List(ctx))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{

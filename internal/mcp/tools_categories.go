@@ -11,8 +11,8 @@ func registerCategoryTools(s *mcp.Server, c *sdk.Client) {
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "list_categories",
 		Description: "List all categories",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []sdk.Category, error) {
-		return adaptResult(c.Categories.List(ctx))
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, ListResult[sdk.Category], error) {
+		return adaptListResult(c.Categories.List(ctx))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{

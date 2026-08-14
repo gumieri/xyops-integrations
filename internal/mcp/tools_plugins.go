@@ -11,8 +11,8 @@ func registerPluginTools(s *mcp.Server, c *sdk.Client) {
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "list_plugins",
 		Description: "List all plugins",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []sdk.Plugin, error) {
-		return adaptResult(c.Plugins.List(ctx))
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, ListResult[sdk.Plugin], error) {
+		return adaptListResult(c.Plugins.List(ctx))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{

@@ -11,8 +11,8 @@ func registerMonitorTools(s *mcp.Server, c *sdk.Client) {
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "list_monitors",
 		Description: "List all monitors",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []sdk.Monitor, error) {
-		return adaptResult(c.Monitors.List(ctx))
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, ListResult[sdk.Monitor], error) {
+		return adaptListResult(c.Monitors.List(ctx))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{

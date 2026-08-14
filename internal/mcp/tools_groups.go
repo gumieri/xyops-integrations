@@ -11,8 +11,8 @@ func registerGroupTools(s *mcp.Server, c *sdk.Client) {
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "list_groups",
 		Description: "List all groups",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []sdk.Group, error) {
-		return adaptResult(c.Groups.List(ctx))
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, ListResult[sdk.Group], error) {
+		return adaptListResult(c.Groups.List(ctx))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{

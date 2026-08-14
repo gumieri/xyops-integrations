@@ -11,8 +11,8 @@ func registerWebHookTools(s *mcp.Server, c *sdk.Client) {
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "list_webhooks",
 		Description: "List all webhooks",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []sdk.WebHook, error) {
-		return adaptResult(c.WebHooks.List(ctx))
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, ListResult[sdk.WebHook], error) {
+		return adaptListResult(c.WebHooks.List(ctx))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{

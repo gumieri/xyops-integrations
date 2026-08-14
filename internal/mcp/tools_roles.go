@@ -11,8 +11,8 @@ func registerRoleTools(s *mcp.Server, c *sdk.Client) {
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "list_roles",
 		Description: "List all roles",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []sdk.Role, error) {
-		return adaptResult(c.Roles.List(ctx))
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, ListResult[sdk.Role], error) {
+		return adaptListResult(c.Roles.List(ctx))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{

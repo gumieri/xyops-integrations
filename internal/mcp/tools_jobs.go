@@ -23,8 +23,8 @@ func registerJobTools(s *mcp.Server, c *sdk.Client) {
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in struct {
 		IDs     []string `json:"ids" jsonschema:"the job IDs"`
 		Verbose bool     `json:"verbose,omitempty" jsonschema:"include verbose output"`
-	}) (*mcp.CallToolResult, []sdk.Job, error) {
-		return adaptResult(c.Jobs.GetBatch(ctx, in.IDs, in.Verbose))
+	}) (*mcp.CallToolResult, ListResult[sdk.Job], error) {
+		return adaptListResult(c.Jobs.GetBatch(ctx, in.IDs, in.Verbose))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -32,8 +32,8 @@ func registerJobTools(s *mcp.Server, c *sdk.Client) {
 		Description: "Search jobs by query",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in struct {
 		Query string `json:"query" jsonschema:"search query"`
-	}) (*mcp.CallToolResult, []sdk.Job, error) {
-		return adaptResult(c.Jobs.Search(ctx, in.Query))
+	}) (*mcp.CallToolResult, ListResult[sdk.Job], error) {
+		return adaptListResult(c.Jobs.Search(ctx, in.Query))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -43,13 +43,13 @@ func registerJobTools(s *mcp.Server, c *sdk.Client) {
 		EventID string `json:"event_id,omitempty" jsonschema:"filter by event ID"`
 		Limit   int    `json:"limit,omitempty" jsonschema:"limit the number of results"`
 		Offset  int    `json:"offset,omitempty" jsonschema:"offset for pagination"`
-	}) (*mcp.CallToolResult, []sdk.Job, error) {
+	}) (*mcp.CallToolResult, ListResult[sdk.Job], error) {
 		opts := &sdk.ActiveJobOpts{
 			EventID: in.EventID,
 			Limit:   in.Limit,
 			Offset:  in.Offset,
 		}
-		return adaptResult(c.Jobs.GetActive(ctx, opts))
+		return adaptListResult(c.Jobs.GetActive(ctx, opts))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{

@@ -11,8 +11,8 @@ func registerAPIKeyTools(s *mcp.Server, c *sdk.Client) {
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "list_api_keys",
 		Description: "List all API keys",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []sdk.APIKey, error) {
-		return adaptResult(c.APIKeys.List(ctx))
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, ListResult[sdk.APIKey], error) {
+		return adaptListResult(c.APIKeys.List(ctx))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{

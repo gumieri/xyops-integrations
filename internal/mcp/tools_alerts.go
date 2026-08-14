@@ -11,8 +11,8 @@ func registerAlertTools(s *mcp.Server, c *sdk.Client) {
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "list_alerts",
 		Description: "List all alerts",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []sdk.Alert, error) {
-		return adaptResult(c.Alerts.List(ctx))
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, ListResult[sdk.Alert], error) {
+		return adaptListResult(c.Alerts.List(ctx))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{

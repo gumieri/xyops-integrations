@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 
 	xymcp "github.com/gumieri/xyops-integrations/internal/mcp"
@@ -17,11 +17,19 @@ import (
 // version, commit, and buildTime are set at build time by GoReleaser via
 // -X main.version, -X main.commit, -X main.buildTime. When building directly
 // with `go build`, they fall back to the defaults below.
+// commit and buildTime are not consumed by the server itself, but must
+// remain declared so GoReleaser's -X ldflags resolve; the init references
+// keep the `unused` linter happy.
 var (
 	version   = "dev"
 	commit    = "unknown"
 	buildTime = "unknown"
 )
+
+func init() {
+	_ = commit
+	_ = buildTime
+}
 
 func main() {
 	baseURL := os.Getenv("XYOPS_BASE_URL")
@@ -45,10 +53,6 @@ func main() {
 	xymcp.Version = version
 	server := xymcp.NewServer(xyopsClient)
 
-	if strings.HasPrefix(baseURL, "http://") {
-		log.Printf("WARNING: XYOPS_BASE_URL uses plain HTTP; the API key will be sent in cleartext")
-	}
-	log.Printf("xyops-mcp %s (commit %s, built %s) starting", version, commit, buildTime)
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
@@ -56,6 +60,7 @@ func main() {
 		if errors.Is(err, context.Canceled) {
 			return
 		}
-		log.Fatalf("Server failed: %v", err)
+		fmt.Fprintln(os.Stderr, "Server failed:", err)
+		os.Exit(1)
 	}
 }

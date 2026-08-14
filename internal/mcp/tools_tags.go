@@ -11,8 +11,8 @@ func registerTagTools(s *mcp.Server, c *sdk.Client) {
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "list_tags",
 		Description: "List all tags",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []sdk.Tag, error) {
-		return adaptResult(c.Tags.List(ctx))
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, ListResult[sdk.Tag], error) {
+		return adaptListResult(c.Tags.List(ctx))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
