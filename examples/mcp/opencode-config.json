@@ -1,12 +1,11 @@
 {
   "mcp": {
-    "servers": {
-      "xyops": {
-        "command": "./xyops-mcp --stdio",
-        "env": {
-          "XYOPS_BASE_URL": "https://xyops.example.com",
-          "XYOPS_API_KEY": "${XYOPS_API_KEY}"
-        }
+    "xyops": {
+      "type": "local",
+      "command": ["xyops-mcp"],
+      "environment": {
+        "XYOPS_BASE_URL": "https://xyops.example.com",
+        "XYOPS_API_KEY": "${XYOPS_API_KEY}"
       }
     }
   }

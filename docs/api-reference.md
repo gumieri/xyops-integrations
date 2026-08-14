@@ -22,10 +22,14 @@ All endpoints are under `/api/app/`.
 | **Role** | `get_roles/v1` (GET) | `get_role/v1?id=X` (GET) | `create_role/v1` (POST) | `update_role/v1` (POST) | `delete_role/v1` (POST) | `privileges` = `map[string]int` (1/0, NOT bool) |
 | **API Key** | `get_api_keys/v1` (GET) | `get_api_key/v1` (**POST** body `{"id":"..."}`) | `create_api_key/v1` (POST) | `update_api_key/v1` (POST) | `delete_api_key/v1` (POST) | **QUIRKS**: (1) read is POST, not GET; (2) `key` write-only, NOT sent on update; (3) `active` is int `1`/`0` |
 | **Web Hook** | `get_web_hooks/v1` (GET) | `get_web_hook/v1?id=X` (GET) | `create_web_hook/v1` (POST) | `update_web_hook/v1` (POST) | `delete_web_hook/v1` (POST) | `headers` = list of `{name, value}` objects, NOT a map |
+| **Channel** | `get_channels/v1` (GET) | `get_channel/v1?id=X` (GET) | `create_channel/v1` (POST) | `update_channel/v1` (POST) | `delete_channel/v1` (POST) | ID prefix `ch...` |
+| **Secret** | `get_secrets/v1` (GET) | `get_secret/v1?id=X` (GET) | `create_secret/v1` (POST) | `update_secret/v1` (POST) | `delete_secret/v1` (POST) | ID prefix `se...`; admin only; `fields` encrypted + write-only |
+| **Bucket** | `get_buckets/v1` (GET) | `get_bucket/v1?id=X` (GET) | `create_bucket/v1` (POST) | `update_bucket/v1` (POST) | `delete_bucket/v1` (POST) | ID prefix `b...`; composite read (`bucket` + `data` + `files`) |
+| **Ticket** | `search_tickets/v1` (GET) | `get_ticket/v1?id=X` (GET) | `create_ticket/v1` (POST) | `update_ticket/v1` (POST) | `delete_ticket/v1` (POST) | ID prefix `t...`; **NO upsert** — always `create_ticket/v1` even with `id`; list via search, no parameterless list |
 
 ID prefixes (e.g. `t...`, `g...`) are API conventions observed in practice; the SDK does NOT validate or enforce them.
 
-**Upsert pattern**: All resources except plugins route to `update_*/v1` when the caller supplies an `id`, otherwise `create_*/v1`. This enables adopting existing resources without import. Plugins ALWAYS use `create_plugin/v1` regardless of `id`.
+**Upsert pattern**: All resources except plugins and tickets route to `update_*/v1` when the caller supplies an `id`, otherwise `create_*/v1`. This enables adopting existing resources without import. Plugins and tickets ALWAYS use `create_*/v1` regardless of `id`.
 
 **Update response**: `write_returns_object = false` — update responses do NOT include the object. The SDK calls `Get` after every update and returns the fresh object.
 
@@ -65,6 +69,67 @@ No delete — clear fields via update. In Terraform this maps to `prevent_destro
 | `delete_job/v1` | POST | Delete completed job (logs + files) |
 | `flush_event_queue/v1` | POST | Flush all queued jobs for an event |
 | `manage_job_tags/v1` | POST | Replace tags on a completed job |
+| `get_job_log/v1` | GET | Raw job log text (`id` + `token` params) — returns plain text, NOT JSON |
+| `view_job_log/v1` | GET | Stream/paginate job log tail (`token` param) — plain text |
+| `download_job_log/v1` | GET | Download job log (`id` + `token` params) — binary/plain bytes |
+| `update_job/v1` | POST | Edit job fields (`description`, `tag`, `progress`, ...) — **no upsert**, job must exist |
+| `update_active_job/v1` | POST | Update a running job's `description`/`progress` |
+| `skip_job_delay/v1` | POST | Skip the delay on a delayed job |
+| `job_toggle_notify_me/v1` | POST | Toggle "notify me" on a job — returns `{"code":0,"enabled":bool}` |
+| `manage_job_tickets/v1` | POST | Replace the tickets attached to a job |
+
+## New-Resource Operations
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `decrypt_secret/v1` | POST body `{"id":"..."}` | Decrypt a secret's field values (admin only). Response key is `fields`, NOT `secret`. |
+| `write_bucket_data/v1` | POST | Shallow-merge data into a bucket's `data` object (`fetch: true` returns the merged object) |
+| `delete_bucket_files/v1` | POST | Delete bucket files by criteria (`filename`, `path`, `date`, `size`, `username`) |
+| `empty_bucket/v1` | POST | Remove all files (`files: true`), all data (`data: true`), or both |
+| `add_ticket_change/v1` | POST | Append a change/comment to a ticket |
+| `update_ticket_change/v1` | POST | Edit (`change` merge) or delete (`del: true`) a ticket change |
+
+Multipart uploads (`upload_bucket_files/v1`, ticket file upload) and SSE streaming (`tail_live_job_log/v1`, `stream_job/v1`) are NOT implemented in the SDK — the payloads and streaming semantics are out of scope.
+
+## Monitor & Server Operations
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `test_monitor_plugin/v1` | POST | Run a monitor plugin ad hoc — returns `{"result": ..., "stderr": ...}` |
+| `test_scheduler_plugin/v1` | POST | Test a scheduler plugin — returns `{"data": ..., "stdout": ...}` |
+| `test_alert/v1` | POST | Render an alert expression for a server — returns `{"result": bool, "message": string}` (message is NOT an error) |
+| `test_web_hook/v1` | POST | Test a web hook — returns nested `result: {code, description, details}` |
+| `multi_update_monitors/v1` | POST | Bulk-update monitors — body is `{"items": [...]}` (NOT `monitors`) |
+| `multi_update_groups/v1` | POST | Bulk-update groups — body is `{"items": [...]}` |
+| `multi_update_categories/v1` | POST | Bulk-update categories — body is `{"items": [...]}` |
+| `get_quickmon_data/v1` | GET | Monitor data for the dashboard — params `server`/`group`, response key `servers` (map) |
+| `get_latest_monitor_data/v1` | GET | Latest monitor data point — needs `sys` param (`hourly`/`daily`/`monthly`/`yearly`) |
+| `get_historical_monitor_data/v1` | GET | Historical monitor data — needs `sys` param |
+| `get_alert_invocations/v1` | GET | List alert invocations — takes `ids` (comma-joined), returns `alerts` array with per-item `{"err": ...}` objects |
+| `get_server/v1` | GET | Single server record — returns `server` + `data` + `online` sibling keys |
+| `update_server/v1` | POST | Update server hostname/group (shallow merge, then re-fetch) |
+| `update_server_data/v1` | POST | Merge or replace a server's custom `data` object (`replace: true`) |
+| `delete_server/v1` | POST | Uninstall/delete a server (admin only; `history: true` for offline servers) |
+| `watch_server/v1` | POST | Watch a server for incoming jobs (`duration` seconds, 0 cancels) |
+| `get_active_servers/v1` | GET | Servers currently watching — `rows` + list envelope |
+| `get_server_summaries/v1` | GET | Aggregate server property counts (os/cpu/virt fields) |
+| `create_snapshot/v1` | POST body `{"server":"..."}` | Take an immediate server snapshot — returns `{"code":0,"id":...}` |
+| `create_group_snapshot/v1` | POST body `{"group":"..."}` | Take a group snapshot — returns `{"code":0,"id":...}` |
+| `delete_snapshot/v1` | POST | Permanently delete a snapshot |
+
+## Search & Export
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `search_servers/v1` | GET | Search servers by PxQL/Unbase query (`query`, `offset`, `limit`, `sort_by`, `sort_dir`) |
+| `search_alerts/v1` | GET | Search alert invocations by query |
+| `search_snapshots/v1` | GET | Search server snapshots (add `verbose: true` for heavy nested fields) |
+| `search_activity/v1` | GET | Search the activity log by query |
+| `search_revision_history/v1` | GET | Search revision history by type + query |
+| `search_stat_history/v1` | GET | Search stat history — `offset`/`limit` are in DAYS; response key is `items` (NOT `rows`) |
+| `search_tickets/v1` | GET | Search tickets by query (default `*`); `compact` omits body and replaces changes with a count |
+| `bulk_search_export/v1` | GET | Bulk-export an index (`format` csv/json, optional `compress` gzip) — returns the file bytes |
+| `marketplace/v1` | GET | Search the plugin marketplace (`query`, `type`, `plugin_type`, `author`, `status`, `license`, `tags`, `requires`, `sort_by`, `sort_dir`, `offset`, `limit`) |
 
 ## Batch Endpoint
 
@@ -84,13 +149,14 @@ No delete — clear fields via update. In Terraform this maps to `prevent_destro
 {"code": 0, "tag": {"id": "tmnditeue2pu40sc", "title": "backup", ...}}
 ```
 
-- Response key varies per resource: `tag`, `group`, `event`, `monitor`, `alert`, `role`, `api_key`, `web_hook`, `category`, `plugin`, `config`, `servers`, and `data` (used by `get_satellite_token/v1`).
+- Response key varies per resource: `tag`, `group`, `event`, `monitor`, `alert`, `role`, `api_key`, `web_hook`, `category`, `plugin`, `config`, `servers`, `channel`, `secret`, `bucket`, `ticket`, and `data` (used by `get_satellite_token/v1`).
 - Create responses include the full object (`create_returns_object = true`).
-- List responses use `rows` (array) and `list.length` (total count pre-pagination).
+- List responses use `rows` (array) and `list.length` (total count pre-pagination). Exception: `get_bucket/v1` returns three sibling keys — `bucket`, `data` (the bucket's custom object), and `files` (array of `File`).
 
 ## Error Handling
 
 - `code != 0` or a string code (e.g. `"session"`, `"test"`, `"access"`) → structured error with the `description` field (a legacy `message` field is also honored as a fallback).
+- **Exception**: a non-empty `message`/`description` on an HTTP 200 response with `code == 0` is NOT an error — some success responses legitimately include one (e.g. `test_alert/v1` returns the rendered message).
 - HTTP 4xx/5xx → JSON body parsed for `code`/`description`; fallback uses raw body.
 - Auth errors: HTTP 401/403, or a string code of `"session"` (e.g. on a 200 response) — `APIError.IsAuth()` covers all three.
 - Privilege denials: v1.0.90 returns HTTP 403 with `code:"access"` (e.g. `API Key "default" does not have the "Create Tags" privilege`). `IsAuth()` returns **false** for these — it's a permission denial, not an invalid session.
@@ -130,6 +196,14 @@ No delete — clear fields via update. In Terraform this maps to `prevent_destro
 
 **Job**: `id`, `event` (NOT `event_id`), `title` (NOT `event_name`), `state`, `target`, `params`, `created`, `completed`, `elapsed` (**float**), `code` (int or string like `"warning"`/`"critical"`/`"abort"`), `description`, `plugin`, `type` (`"event"|"workflow"`), `category`, `source`, `progress`, `tag`, `token`, `server`, `username`, `started`. `get_jobs/v1` returns the batch under a `jobs` array.
 
+**Channel**: `id`, `title`, `enabled`, `icon`, `users`, `email`, `web_hook` (ID ref), `run_event`, `sound`, `max_per_day` (0 = unlimited), `notes`, `username`, `created`, `modified`, `revision`
+
+**Secret**: `id`, `title`, `enabled`, `icon`, `notes`, `names`, `events`, `categories`, `plugins`, `web_hooks`, `username`, `created`, `modified`, `revision`, `fields` (**list of `{name, value}` — values encrypted and WRITE-ONLY**, never returned by `get_secret`; only `decrypt_secret/v1` exposes them, admin only)
+
+**Bucket**: `id`, `title`, `enabled`, `icon`, `notes`, `username`, `created`, `modified`, `revision`. Custom payload lives in a separate `data` object (managed via `write_bucket_data/v1`), and stored files are `File` objects (`id`, `path`, `filename`, `size`, `date`, `username`, `job`, `server`, `ticket`).
+
+**Ticket**: `id`, `num` (int), `subject`, `body` (markdown), `type`, `status`, `category`, `server`, `assignees`, `cc`, `notify`, `due` (unix), `tags`, `events` (list of `{id, targets, algo, tags, params}`), `changes` (list of `{id, type, username, date, key, value (any), body, edited}`). `value` in a change is polymorphic — string, number, or bool.
+
 ## Workflow DAG Model
 
 ```json
@@ -155,4 +229,4 @@ Events, plugins, monitors, alerts, and roles reference other resources by human-
 2. On miss, queries the corresponding list endpoint and rebuilds the cache for that type.
 3. Returns the internal ID for the key.
 
-Supported resolver types: `tag`, `group`, `category`, `plugin`, `monitor`, `role`, `alert`, `api_key`, `webhook`, `event`.
+Supported resolver types: `tag`, `group`, `category`, `plugin`, `monitor`, `role`, `alert`, `api_key`, `webhook`, `event`, `channel`, `secret`, `bucket`.

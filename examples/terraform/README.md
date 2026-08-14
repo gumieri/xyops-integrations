@@ -57,4 +57,41 @@ resource "xyops_category" "maintenance" {
   title   = "maintenance"
   enabled = true
 }
+
+# Channel
+resource "xyops_channel" "oncall" {
+  title = "oncall"
+}
+
+# Secret (field values are encrypted and write-only)
+resource "xyops_secret" "db_credentials" {
+  title   = "db-credentials"
+  enabled = true
+  fields = [
+    { name = "host", value = "db.internal" },
+    { name = "password", value = var.db_password },
+  ]
+}
+
+# Bucket
+resource "xyops_bucket" "artifacts" {
+  title   = "artifacts"
+  enabled = true
+  notes   = "Build artifacts"
+}
+
+# Ticket
+resource "xyops_ticket" "example" {
+  subject = "Example ticket"
+  body    = "Created by Terraform"
+  status  = "open"
+  tags    = ["automated"]
+}
+
+# Data sources
+data "xyops_channels" "all" {}
+data "xyops_secrets" "all" {}
+data "xyops_buckets" "all" {}
+data "xyops_tickets" "all" {}
+
 ```
