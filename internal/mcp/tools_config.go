@@ -23,4 +23,35 @@ func registerConfigTools(s *mcp.Server, c *sdk.Client) {
 	}) (*mcp.CallToolResult, map[string]any, error) {
 		return adaptResult(c.Config.Update(ctx, in.Patch))
 	})
+
+	mcp.AddTool(s, &mcp.Tool{
+		Name:        "get_health",
+		Description: "Check the conductor's health (ping)",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, bool, error) {
+		return adaptResult(c.Health(ctx))
+	})
+
+	mcp.AddTool(s, &mcp.Tool{
+		Name:        "get_multiple",
+		Description: "Batch-fetch several list types in one call",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in struct {
+		Lists       []string `json:"lists,omitempty" jsonschema:"list types to fetch (events, jobs, alerts, groups, monitors, plugins, channels, buckets, secrets, ...)"`
+		Jobs        bool     `json:"jobs,omitempty" jsonschema:"include jobs"`
+		Alerts      bool     `json:"alerts,omitempty" jsonschema:"include alerts"`
+		State       bool     `json:"state,omitempty" jsonschema:"include state"`
+		Stats       bool     `json:"stats,omitempty" jsonschema:"include stats"`
+		Servers     bool     `json:"servers,omitempty" jsonschema:"include servers"`
+		ServerCache bool     `json:"server_cache,omitempty" jsonschema:"include the server cache"`
+	}) (*mcp.CallToolResult, *sdk.GetMultipleResponse, error) {
+		opts := &sdk.GetMultipleOpts{
+			Lists:       in.Lists,
+			Jobs:        in.Jobs,
+			Alerts:      in.Alerts,
+			State:       in.State,
+			Stats:       in.Stats,
+			Servers:     in.Servers,
+			ServerCache: in.ServerCache,
+		}
+		return adaptResult(c.GetMultiple.Get(ctx, *opts))
+	})
 }

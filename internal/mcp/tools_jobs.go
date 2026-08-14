@@ -98,4 +98,39 @@ func registerJobTools(s *mcp.Server, c *sdk.Client) {
 	}) (*mcp.CallToolResult, string, error) {
 		return adaptResult("updated", c.Jobs.ManageTags(ctx, in.JobID, in.Tags))
 	})
+
+	mcp.AddTool(s, &mcp.Tool{
+		Name:        "resume_job",
+		Description: "Resume a failed or paused job",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in struct {
+		JobID  string         `json:"job_id" jsonschema:"the job ID to resume"`
+		Params map[string]any `json:"params,omitempty" jsonschema:"optional params for the resumed job"`
+	}) (*mcp.CallToolResult, string, error) {
+		return adaptResult("resumed", c.Jobs.Resume(ctx, in.JobID, in.Params))
+	})
+
+	mcp.AddTool(s, &mcp.Tool{
+		Name:        "get_active_job_summary",
+		Description: "Get a summary of active jobs (counts per event)",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, map[string]any, error) {
+		return adaptResult(c.Jobs.GetActiveSummary(ctx))
+	})
+
+	mcp.AddTool(s, &mcp.Tool{
+		Name:        "get_workflow_job_summary",
+		Description: "Get summary stats for a workflow job",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in struct {
+		JobID string `json:"job_id" jsonschema:"the workflow job ID"`
+	}) (*mcp.CallToolResult, map[string]any, error) {
+		return adaptResult(c.Jobs.GetWorkflowSummary(ctx, in.JobID))
+	})
+
+	mcp.AddTool(s, &mcp.Tool{
+		Name:        "get_event_history",
+		Description: "Get the event execution history for an event",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in struct {
+		EventID string `json:"event_id" jsonschema:"the event ID"`
+	}) (*mcp.CallToolResult, map[string]any, error) {
+		return adaptResult(c.Jobs.GetEventHistory(ctx, in.EventID))
+	})
 }
