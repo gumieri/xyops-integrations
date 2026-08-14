@@ -554,3 +554,172 @@ type GetMultipleResponse struct {
 	State      map[string]any    `json:"state,omitempty"`
 	Stats      map[string]any    `json:"stats,omitempty"`
 }
+
+// SecretField represents a single field in a decrypted secret.
+type SecretField struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+// Channel represents a notification channel.
+type Channel struct {
+	ID        string   `json:"id,omitempty"`
+	Title     string   `json:"title"`
+	Enabled   bool     `json:"enabled"`
+	Icon      string   `json:"icon,omitempty"`
+	Users     []string `json:"users,omitempty"`
+	Email     string   `json:"email,omitempty"`
+	WebHook   string   `json:"web_hook,omitempty"` // references a WebHook ID
+	RunEvent  string   `json:"run_event,omitempty"`
+	Sound     string   `json:"sound,omitempty"`
+	MaxPerDay int      `json:"max_per_day,omitempty"`
+	Notes     string   `json:"notes,omitempty"`
+	Username  string   `json:"username,omitempty"`
+	Created   int64    `json:"created,omitempty"`
+	Modified  int64    `json:"modified,omitempty"`
+	Revision  int      `json:"revision,omitempty"`
+}
+
+// Secret represents a secret with metadata only (fields are write-only).
+type Secret struct {
+	ID         string        `json:"id,omitempty"`
+	Title      string        `json:"title"`
+	Enabled    bool          `json:"enabled"`
+	Icon       string        `json:"icon,omitempty"`
+	Notes      string        `json:"notes,omitempty"`
+	Names      []string      `json:"names,omitempty"`
+	Events     []string      `json:"events,omitempty"`
+	Categories []string      `json:"categories,omitempty"`
+	Plugins    []string      `json:"plugins,omitempty"`
+	WebHooks   []string      `json:"web_hooks,omitempty"`
+	Username   string        `json:"username,omitempty"`
+	Created    int64         `json:"created,omitempty"`
+	Modified   int64         `json:"modified,omitempty"`
+	Revision   int           `json:"revision,omitempty"`
+	Fields     []SecretField `json:"fields,omitempty"`
+}
+
+// Bucket represents a bucket for storing key-value data and files.
+type Bucket struct {
+	ID       string `json:"id,omitempty"`
+	Title    string `json:"title"`
+	Enabled  bool   `json:"enabled"`
+	Icon     string `json:"icon,omitempty"`
+	Notes    string `json:"notes,omitempty"`
+	Username string `json:"username,omitempty"`
+	Created  int64  `json:"created,omitempty"`
+	Modified int64  `json:"modified,omitempty"`
+	Revision int    `json:"revision,omitempty"`
+}
+
+// File represents a file stored in a bucket or attached to a ticket.
+type File struct {
+	ID       string `json:"id,omitempty"`
+	Path     string `json:"path,omitempty"`
+	Filename string `json:"filename,omitempty"`
+	Size     int64  `json:"size,omitempty"`
+	Date     int64  `json:"date,omitempty"`
+	Username string `json:"username,omitempty"`
+	Job      string `json:"job,omitempty"`
+	Server   string `json:"server,omitempty"`
+	Ticket   string `json:"ticket,omitempty"`
+}
+
+// TicketEvent represents an event trigger in a ticket workflow.
+type TicketEvent struct {
+	ID      string   `json:"id,omitempty"`
+	Targets []string `json:"targets,omitempty"`
+	Algo    string   `json:"algo,omitempty"`
+	Tags    []string `json:"tags,omitempty"`
+	Params  any      `json:"params,omitempty"`
+}
+
+// TicketChange represents a change record in a ticket history.
+type TicketChange struct {
+	ID       string `json:"id,omitempty"`
+	Type     string `json:"type,omitempty"` // "change" or "comment"
+	Username string `json:"username,omitempty"`
+	Date     int64  `json:"date,omitempty"`
+	Key      string `json:"key,omitempty"`
+	Value    any    `json:"value,omitempty"` // Mixed: string, number, or bool
+	Body     string `json:"body,omitempty"`  // markdown, for "comment" type
+	Edited   int64  `json:"edited,omitempty"`
+}
+
+// Ticket represents a support ticket.
+type Ticket struct {
+	ID        string         `json:"id,omitempty"`
+	Num       int            `json:"num,omitempty"`
+	Subject   string         `json:"subject"`
+	Body      string         `json:"body,omitempty"`
+	Type      string         `json:"type,omitempty"`
+	Status    string         `json:"status,omitempty"`
+	Category  string         `json:"category,omitempty"`
+	Server    string         `json:"server,omitempty"`
+	Assignees []string       `json:"assignees,omitempty"`
+	CC        []string       `json:"cc,omitempty"`
+	Notify    []string       `json:"notify,omitempty"`
+	Due       int64          `json:"due,omitempty"`
+	Tags      []string       `json:"tags,omitempty"`
+	Events    []TicketEvent  `json:"events,omitempty"`
+	Changes   []TicketChange `json:"changes,omitempty"`
+	Files     []File         `json:"files,omitempty"`
+}
+
+// Response envelopes for new resources.
+
+type ChannelResponse struct {
+	Code    int      `json:"code"`
+	Channel *Channel `json:"channel"`
+}
+
+type ChannelListResponse struct {
+	Code int       `json:"code"`
+	Rows []Channel `json:"rows"`
+	List ListMeta  `json:"list"`
+}
+
+type SecretResponse struct {
+	Code   int     `json:"code"`
+	Secret *Secret `json:"secret"`
+}
+
+type SecretListResponse struct {
+	Code int      `json:"code"`
+	Rows []Secret `json:"rows"`
+	List ListMeta `json:"list"`
+}
+
+type DecryptSecretResponse struct {
+	Code   int           `json:"code"`
+	Fields []SecretField `json:"fields"`
+}
+
+type BucketResponse struct {
+	Code   int     `json:"code"`
+	Bucket *Bucket `json:"bucket"`
+}
+
+type BucketListResponse struct {
+	Code int      `json:"code"`
+	Rows []Bucket `json:"rows"`
+	List ListMeta `json:"list"`
+}
+
+type GetBucketResponse struct {
+	Code   int             `json:"code"`
+	Bucket *Bucket         `json:"bucket,omitempty"`
+	Data   json.RawMessage `json:"data,omitempty"`
+	Files  []File          `json:"files,omitempty"`
+}
+
+type TicketResponse struct {
+	Code   int     `json:"code"`
+	Ticket *Ticket `json:"ticket"`
+}
+
+type TicketListResponse struct {
+	Code int      `json:"code"`
+	Rows []Ticket `json:"rows"`
+	List ListMeta `json:"list"`
+}
