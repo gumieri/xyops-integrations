@@ -546,9 +546,9 @@ type GetMultipleResponse struct {
 	Roles      []Role            `json:"roles,omitempty"`
 	APIKeys    []APIKey          `json:"api_keys,omitempty"`
 	WebHooks   []WebHook         `json:"web_hooks,omitempty"`
-	Channels   []map[string]any  `json:"channels,omitempty"`
-	Buckets    []map[string]any  `json:"buckets,omitempty"`
-	Secrets    []map[string]any  `json:"secrets,omitempty"`
+	Channels   []Channel         `json:"channels,omitempty"`
+	Buckets    []Bucket          `json:"buckets,omitempty"`
+	Secrets    []Secret          `json:"secrets,omitempty"`
 	Servers    map[string]Server `json:"servers,omitempty"`
 	Jobs       []Job             `json:"jobs,omitempty"`
 	State      map[string]any    `json:"state,omitempty"`

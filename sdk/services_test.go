@@ -271,18 +271,24 @@ func TestAPIKeysService_Create_PlainKey(t *testing.T) {
 
 func TestGetMultipleService_ServersObject(t *testing.T) {
 	_, client, cleanup := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write([]byte(`{"code": 0, "servers": {"s1": {"id": "s1", "hostname": "worker01"}}, "buckets": [{"id": "b1"}]}`))
+		_, _ = w.Write([]byte(`{"code": 0, "servers": {"s1": {"id": "s1", "hostname": "worker01"}}, "buckets": [{"id": "b1", "title": "the-void"}], "channels": [{"id": "c1", "title": "sev1"}], "secrets": [{"id": "sec1", "title": "db"}]}`))
 	})
 	defer cleanup()
 
-	resp, err := client.GetMultiple.Get(context.Background(), GetMultipleOpts{Lists: []string{"buckets"}, Servers: true})
+	resp, err := client.GetMultiple.Get(context.Background(), GetMultipleOpts{Lists: []string{"buckets", "channels", "secrets"}, Servers: true})
 	if err != nil {
 		t.Fatalf("get multiple: %v", err)
 	}
 	if len(resp.Servers) != 1 || resp.Servers["s1"].Hostname != "worker01" {
 		t.Errorf("unexpected servers: %+v", resp.Servers)
 	}
-	if len(resp.Buckets) != 1 {
-		t.Errorf("expected 1 bucket, got %d", len(resp.Buckets))
+	if len(resp.Buckets) != 1 || resp.Buckets[0].Title != "the-void" {
+		t.Errorf("expected typed buckets, got %+v", resp.Buckets)
+	}
+	if len(resp.Channels) != 1 || resp.Channels[0].Title != "sev1" {
+		t.Errorf("expected typed channels, got %+v", resp.Channels)
+	}
+	if len(resp.Secrets) != 1 || resp.Secrets[0].Title != "db" {
+		t.Errorf("expected typed secrets, got %+v", resp.Secrets)
 	}
 }
