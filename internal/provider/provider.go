@@ -84,6 +84,10 @@ func (p *xyopsProvider) Resources(_ context.Context) []func() resource.Resource 
 		NewAPIKeyResource,
 		NewPluginResource,
 		NewEventResource,
+		NewChannelResource,
+		NewSecretResource,
+		NewBucketResource,
+		NewTicketResource,
 	}
 }
 
@@ -101,5 +105,9 @@ func (p *xyopsProvider) DataSources(_ context.Context) []func() datasource.DataS
 		NewWebHooksDataSource,
 		NewServersDataSource,
 		NewConfigDataSource,
+		NewChannelsDataSource,
+		NewSecretsDataSource,
+		NewBucketsDataSource,
+		NewTicketsDataSource,
 	}
 }

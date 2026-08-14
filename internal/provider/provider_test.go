@@ -28,15 +28,16 @@ func TestProvider_Resources(t *testing.T) {
 	expected := []string{
 		"xyops_tag", "xyops_group", "xyops_category", "xyops_monitor",
 		"xyops_alert", "xyops_webhook", "xyops_role", "xyops_api_key",
-		"xyops_plugin", "xyops_event",
+		"xyops_plugin", "xyops_event", "xyops_channel", "xyops_secret",
+		"xyops_bucket", "xyops_ticket",
 	}
 	for _, name := range expected {
 		if !names[name] {
 			t.Errorf("missing resource: %s", name)
 		}
 	}
-	if len(names) != 10 {
-		t.Errorf("expected 10 resources, got %d", len(names))
+	if len(names) != 14 {
+		t.Errorf("expected 14 resources, got %d", len(names))
 	}
 }
 
@@ -61,14 +62,15 @@ func TestProvider_DataSources(t *testing.T) {
 		"xyops_tags", "xyops_groups", "xyops_categories", "xyops_plugins",
 		"xyops_events", "xyops_monitors", "xyops_alerts", "xyops_roles",
 		"xyops_api_keys", "xyops_webhooks", "xyops_servers", "xyops_config",
+		"xyops_channels", "xyops_secrets", "xyops_buckets", "xyops_tickets",
 	}
 	for _, name := range expected {
 		if !names[name] {
 			t.Errorf("missing data source: %s", name)
 		}
 	}
-	if len(names) != 12 {
-		t.Errorf("expected 12 datasources, got %d", len(names))
+	if len(names) != 16 {
+		t.Errorf("expected 16 datasources, got %d", len(names))
 	}
 }
 
