@@ -21,3 +21,4 @@ type ChannelsService struct{ client *Client }
 type SecretsService struct{ client *Client }
 type BucketsService struct{ client *Client }
 type TicketsService struct{ client *Client }
+type SearchService struct{ client *Client }

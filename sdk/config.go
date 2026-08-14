@@ -53,6 +53,137 @@ func (s *ServersService) Masters(ctx context.Context) (map[string]Conductor, err
 	return resp.Masters, nil
 }
 
+// Get returns a server's record, host data, and online status via
+// get_server/v1 (three sibling keys).
+func (s *ServersService) Get(ctx context.Context, id string) (*Server, map[string]any, bool, error) {
+	body, err := s.client.DoGETWithQuery(ctx, "get_server/v1", map[string]string{"id": id})
+	if err != nil {
+		return nil, nil, false, err
+	}
+
+	var resp struct {
+		Code   int            `json:"code"`
+		Server *Server        `json:"server"`
+		Data   map[string]any `json:"data"`
+		Online bool           `json:"online"`
+	}
+	if err := unmarshalJSON(body, &resp); err != nil {
+		return nil, nil, false, err
+	}
+	return resp.Server, resp.Data, resp.Online, nil
+}
+
+// Update shallow-merges server properties via update_server/v1, then
+// re-fetches the server.
+func (s *ServersService) Update(ctx context.Context, server *Server) (*Server, error) {
+	_, err := s.client.DoPOST(ctx, "update_server/v1", server)
+	if err != nil {
+		return nil, err
+	}
+
+	srv, _, _, err := s.Get(ctx, server.ID)
+	return srv, err
+}
+
+// UpdateData shallow-merges (or replaces, when replace is true) a server's
+// user data object and returns the complete resulting object.
+func (s *ServersService) UpdateData(ctx context.Context, id string, data map[string]any, replace bool) (map[string]any, error) {
+	payload := map[string]any{"id": id, "data": data}
+	if replace {
+		payload["replace"] = true
+	}
+	body, err := s.client.DoPOST(ctx, "update_server_data/v1", payload)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp struct {
+		Code int            `json:"code"`
+		Data map[string]any `json:"data"`
+	}
+	if err := unmarshalJSON(body, &resp); err != nil {
+		return nil, err
+	}
+	return resp.Data, nil
+}
+
+// Delete uninstalls and optionally deletes a server (admin only). Offline
+// servers require history=true. Runs in the background.
+func (s *ServersService) Delete(ctx context.Context, id string, history bool) error {
+	payload := map[string]any{"id": id}
+	if history {
+		payload["history"] = true
+	}
+	_, err := s.client.DoPOST(ctx, "delete_server/v1", payload)
+	return err
+}
+
+// Watch takes a snapshot once per minute for the given duration (seconds).
+// A duration of 0 cancels an existing watch.
+func (s *ServersService) Watch(ctx context.Context, id string, duration int) error {
+	_, err := s.client.DoPOST(ctx, "watch_server/v1", map[string]any{"id": id, "duration": duration})
+	return err
+}
+
+// Active returns servers currently connected to the conductor via
+// get_active_servers/v1 (rows + list envelope).
+func (s *ServersService) Active(ctx context.Context) ([]Server, error) {
+	body, err := s.client.DoGET(ctx, "get_active_servers/v1")
+	if err != nil {
+		return nil, err
+	}
+
+	var resp struct {
+		Code int      `json:"code"`
+		Rows []Server `json:"rows"`
+	}
+	if err := unmarshalJSON(body, &resp); err != nil {
+		return nil, err
+	}
+	return resp.Rows, nil
+}
+
+// Summaries returns aggregate server property counts keyed by field ID
+// (os_platform, os_distro, os_release, os_arch, cpu_virt, cpu_brand, cpu_cores).
+func (s *ServersService) Summaries(ctx context.Context) (map[string]map[string]int, error) {
+	body, err := s.client.DoGET(ctx, "get_server_summaries/v1")
+	if err != nil {
+		return nil, err
+	}
+
+	var resp struct {
+		Code      int                       `json:"code"`
+		Summaries map[string]map[string]int `json:"summaries"`
+	}
+	if err := unmarshalJSON(body, &resp); err != nil {
+		return nil, err
+	}
+	return resp.Summaries, nil
+}
+
+// CreateSnapshot takes an immediate snapshot of a server.
+func (s *ServersService) CreateSnapshot(ctx context.Context, serverID string) (string, error) {
+	body, err := s.client.DoPOST(ctx, "create_snapshot/v1", map[string]string{"server": serverID})
+	if err != nil {
+		return "", err
+	}
+
+	var resp struct {
+		Code int    `json:"code"`
+		ID   string `json:"id"`
+	}
+	if err := unmarshalJSON(body, &resp); err != nil {
+		return "", err
+	}
+	return resp.ID, nil
+}
+
+// DeleteSnapshot permanently deletes a snapshot.
+func (s *ServersService) DeleteSnapshot(ctx context.Context, snapshotID string) error {
+	_, err := s.client.DoPOST(ctx, "delete_snapshot/v1", map[string]string{"id": snapshotID})
+	return err
+}
+
 // listResponse fetches and parses the ServerListResponse, shared by List
 // and Masters to avoid duplicate HTTP calls.
 func (s *ServersService) listResponse(ctx context.Context) (*ServerListResponse, error) {

@@ -118,6 +118,59 @@ func (s *GroupsService) Delete(ctx context.Context, id string) error {
 	return err
 }
 
+// Watch takes a snapshot once per minute for the given duration (seconds).
+// A duration of 0 cancels an existing watch.
+func (s *GroupsService) Watch(ctx context.Context, id string, duration int) error {
+	_, err := s.client.DoPOST(ctx, "watch_group/v1", map[string]any{"id": id, "duration": duration})
+	return err
+}
+
+// CreateSnapshot takes an immediate snapshot of a group's servers.
+func (s *GroupsService) CreateSnapshot(ctx context.Context, groupID string) (string, error) {
+	body, err := s.client.DoPOST(ctx, "create_group_snapshot/v1", map[string]string{"group": groupID})
+	if err != nil {
+		return "", err
+	}
+
+	var resp struct {
+		Code int    `json:"code"`
+		ID   string `json:"id"`
+	}
+	if err := unmarshalJSON(body, &resp); err != nil {
+		return "", err
+	}
+	return resp.ID, nil
+}
+
+// MultiUpdate applies shallow merges to several groups in one call.
+func (s *GroupsService) MultiUpdate(ctx context.Context, groups []*Group) error {
+	if len(groups) == 0 {
+		return nil
+	}
+	items := make([]map[string]any, 0, len(groups))
+	for _, g := range groups {
+		if g == nil {
+			continue
+		}
+		item := map[string]any{"id": g.ID}
+		if g.Title != "" {
+			item["title"] = g.Title
+		}
+		if g.HostnameMatch != "" {
+			item["hostname_match"] = g.HostnameMatch
+		}
+		if g.SortOrder != 0 {
+			item["sort_order"] = g.SortOrder
+		}
+		items = append(items, item)
+	}
+	if len(items) == 0 {
+		return nil
+	}
+	_, err := s.client.DoPOST(ctx, "multi_update_group/v1", map[string]any{"items": items})
+	return err
+}
+
 // CategoriesService
 func (s *CategoriesService) List(ctx context.Context) ([]Category, error) {
 	body, err := s.client.DoGET(ctx, "get_categories/v1")
@@ -173,5 +226,29 @@ func (s *CategoriesService) Update(ctx context.Context, category *Category) (*Ca
 
 func (s *CategoriesService) Delete(ctx context.Context, id string) error {
 	_, err := s.client.DoPOST(ctx, "delete_category/v1", map[string]string{"id": id})
+	return err
+}
+
+// MultiUpdate applies shallow merges to several categories in one call.
+func (s *CategoriesService) MultiUpdate(ctx context.Context, categories []*Category) error {
+	if len(categories) == 0 {
+		return nil
+	}
+	items := make([]map[string]any, 0, len(categories))
+	for _, c := range categories {
+		if c == nil {
+			continue
+		}
+		item := map[string]any{"id": c.ID}
+		if c.Title != "" {
+			item["title"] = c.Title
+		}
+		item["enabled"] = c.Enabled
+		items = append(items, item)
+	}
+	if len(items) == 0 {
+		return nil
+	}
+	_, err := s.client.DoPOST(ctx, "multi_update_category/v1", map[string]any{"items": items})
 	return err
 }

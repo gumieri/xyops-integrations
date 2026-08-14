@@ -44,6 +44,7 @@ type Client struct {
 	Secrets     *SecretsService
 	Buckets     *BucketsService
 	Tickets     *TicketsService
+	Search      *SearchService
 }
 
 // New creates a new xyops API client.
@@ -112,6 +113,7 @@ func (c *Client) initServices() {
 	c.Secrets = &SecretsService{client: c}
 	c.Buckets = &BucketsService{client: c}
 	c.Tickets = &TicketsService{client: c}
+	c.Search = &SearchService{client: c}
 }
 
 // DoRequest performs an HTTP request with auth headers and returns raw bytes.
@@ -185,7 +187,10 @@ func checkErrorResponse(statusCode int, respBody []byte) error {
 		code := normalizeCode(rawErr.Code)
 		// Per the spec, a description only ever appears on error responses,
 		// so any non-empty description or non-success code is an error.
-		if codeString(code) == "session" || isErrorCode(code) || desc != "" {
+		// However, some success responses legitimately include a message
+		// field (e.g. test_alert/v1 returns the rendered message). Only
+		// treat it as an error when the code indicates failure.
+		if codeString(code) == "session" || isErrorCode(code) || (desc != "" && !isSuccessCode(code)) {
 			return NewAPIError(code, desc, statusCode)
 		}
 	}
@@ -224,6 +229,18 @@ func isErrorCode(code any) bool {
 		return v != 0
 	case string:
 		return v != "session" && v != "0"
+	default:
+		return false
+	}
+}
+
+// isSuccessCode reports whether a code value indicates success.
+func isSuccessCode(code any) bool {
+	switch v := code.(type) {
+	case int:
+		return v == 0
+	case string:
+		return v == "0"
 	default:
 		return false
 	}

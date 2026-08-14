@@ -561,6 +561,24 @@ type SecretField struct {
 	Value string `json:"value"`
 }
 
+// AlertInvocation represents a single alert firing record (get_alert_invocations/v1,
+// search_alerts/v1). Fields follow the AlertInvocation object in the API docs.
+type AlertInvocation struct {
+	ID       string   `json:"id,omitempty"`
+	Active   bool     `json:"active,omitempty"`
+	Alert    string   `json:"alert,omitempty"`
+	Server   string   `json:"server,omitempty"`
+	Groups   []string `json:"groups,omitempty"`
+	Jobs     []string `json:"jobs,omitempty"`
+	Tickets  []string `json:"tickets,omitempty"`
+	Start    int64    `json:"start,omitempty"`
+	End      int64    `json:"end,omitempty"`
+	Created  int64    `json:"created,omitempty"`
+	State    string   `json:"state,omitempty"`
+	Notes    string   `json:"notes,omitempty"`
+	Revision int      `json:"revision,omitempty"`
+}
+
 // Channel represents a notification channel.
 type Channel struct {
 	ID        string   `json:"id,omitempty"`

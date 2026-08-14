@@ -283,3 +283,89 @@ func (s *JobsService) ManageTags(ctx context.Context, jobID string, tags []strin
 	}
 	return nil
 }
+
+// GetLog returns a job's log as raw text (text/plain, not JSON).
+// Returns ("", nil) when there is no log.
+func (s *JobsService) GetLog(ctx context.Context, jobID string) (string, error) {
+	body, err := s.client.DoGETWithQuery(ctx, "get_job_log/v1", map[string]string{"id": jobID})
+	if err != nil {
+		return "", err
+	}
+	return string(body), nil
+}
+
+// ViewLog returns a job's log as raw text using a shareable token.
+func (s *JobsService) ViewLog(ctx context.Context, jobID, token string) (string, error) {
+	body, err := s.client.DoGETWithQuery(ctx, "view_job_log/v1", map[string]string{"id": jobID, "t": token})
+	if err != nil {
+		return "", err
+	}
+	return string(body), nil
+}
+
+// DownloadLog returns a job's log as raw bytes using a shareable token.
+func (s *JobsService) DownloadLog(ctx context.Context, jobID, token string) ([]byte, error) {
+	return s.client.DoGETWithQuery(ctx, "download_job_log/v1", map[string]string{"id": jobID, "t": token})
+}
+
+// Update modifies a job record (admin only). Running jobs are updated
+// in-memory; completed jobs are updated in persisted storage.
+func (s *JobsService) Update(ctx context.Context, job *Job) error {
+	_, err := s.client.DoPOST(ctx, "update_job/v1", job)
+	if err != nil {
+		return fmt.Errorf("update job %s: %w", job.ID, err)
+	}
+	return nil
+}
+
+// UpdateActive patches a live in-memory job record via update_active_job/v1.
+func (s *JobsService) UpdateActive(ctx context.Context, jobID string, updates map[string]any) error {
+	payload := map[string]any{"id": jobID}
+	for k, v := range updates {
+		payload[k] = v
+	}
+	_, err := s.client.DoPOST(ctx, "update_active_job/v1", payload)
+	if err != nil {
+		return fmt.Errorf("update active job %s: %w", jobID, err)
+	}
+	return nil
+}
+
+// SkipDelay moves a delayed job's deadline to now, skipping its delay.
+func (s *JobsService) SkipDelay(ctx context.Context, jobID string) error {
+	_, err := s.client.DoPOST(ctx, "job_skip_delay/v1", map[string]string{"id": jobID})
+	if err != nil {
+		return fmt.Errorf("skip delay job %s: %w", jobID, err)
+	}
+	return nil
+}
+
+// ToggleNotifyMe toggles the current user's completion-notification email for
+// a job and returns the new state.
+func (s *JobsService) ToggleNotifyMe(ctx context.Context, jobID string) (bool, error) {
+	body, err := s.client.DoPOST(ctx, "job_toggle_notify_me/v1", map[string]string{"id": jobID})
+	if err != nil {
+		return false, err
+	}
+
+	var resp struct {
+		Code    int  `json:"code"`
+		Enabled bool `json:"enabled"`
+	}
+	if err := unmarshalJSON(body, &resp); err != nil {
+		return false, err
+	}
+	return resp.Enabled, nil
+}
+
+// ManageTickets replaces the tickets attached to a completed job.
+func (s *JobsService) ManageTickets(ctx context.Context, jobID string, tickets []string) error {
+	if tickets == nil {
+		tickets = []string{}
+	}
+	_, err := s.client.DoPOST(ctx, "manage_job_tickets/v1", map[string]any{"id": jobID, "tickets": tickets})
+	if err != nil {
+		return fmt.Errorf("manage job tickets %s: %w", jobID, err)
+	}
+	return nil
+}
