@@ -50,3 +50,8 @@ node_modules/
 package-lock.json
 package.json
 bun.lock
+
+# Local scratch (contains live credentials / unrelated project dump)
+.scratch-mcp/
+.scratch-opencode/
+.opencode/
