@@ -71,20 +71,19 @@ Configure opencode:
 ```json
 {
   "mcp": {
-    "servers": {
-      "xyops": {
-        "command": "./xyops-mcp",
-        "env": {
-          "XYOPS_BASE_URL": "https://xyops.example.com",
-          "XYOPS_API_KEY": "${XYOPS_API_KEY}"
-        }
+    "xyops": {
+      "type": "local",
+      "command": ["xyops-mcp"],
+      "environment": {
+        "XYOPS_BASE_URL": "https://xyops.example.com",
+        "XYOPS_API_KEY": "${XYOPS_API_KEY}"
       }
     }
   }
 }
 ```
 
-Available MCP tools include: `xyops_list_servers`, `xyops_list_events`, `xyops_search_jobs`, `xyops_trigger_event`, `xyops_create_tag`, and many more.
+The MCP server exposes ~112 tools covering all resources, jobs, servers, search, and config. See `internal/mcp/` for the full tool set.
 
 ## Architecture
 
