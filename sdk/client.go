@@ -40,6 +40,10 @@ type Client struct {
 	Satellite   *SatelliteService
 	Jobs        *JobsService
 	GetMultiple *GetMultipleService
+	Channels    *ChannelsService
+	Secrets     *SecretsService
+	Buckets     *BucketsService
+	Tickets     *TicketsService
 }
 
 // New creates a new xyops API client.
@@ -104,6 +108,10 @@ func (c *Client) initServices() {
 	c.Satellite = &SatelliteService{client: c}
 	c.Jobs = &JobsService{client: c}
 	c.GetMultiple = &GetMultipleService{client: c}
+	c.Channels = &ChannelsService{client: c}
+	c.Secrets = &SecretsService{client: c}
+	c.Buckets = &BucketsService{client: c}
+	c.Tickets = &TicketsService{client: c}
 }
 
 // DoRequest performs an HTTP request with auth headers and returns raw bytes.
