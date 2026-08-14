@@ -129,3 +129,54 @@ func TestResolver_UnknownType(t *testing.T) {
 		t.Fatal("expected error for unknown resource type")
 	}
 }
+
+func TestResolver_NewTypes(t *testing.T) {
+	tests := []struct {
+		name       string
+		pathPrefix string
+		rows       string
+		resolveKey string
+		resolveID  string
+	}{
+		{
+			name:       "channel",
+			pathPrefix: "/api/app/get_channels/v1",
+			rows:       `[{"id": "ch1", "title": "oncall"}, {"id": "ch2", "title": "alerts"}]`,
+			resolveKey: "alerts",
+			resolveID:  "ch2",
+		},
+		{
+			name:       "secret",
+			pathPrefix: "/api/app/get_secrets/v1",
+			rows:       `[{"id": "se1", "title": "db-credentials"}, {"id": "se2", "title": "api-token"}]`,
+			resolveKey: "db-credentials",
+			resolveID:  "se1",
+		},
+		{
+			name:       "bucket",
+			pathPrefix: "/api/app/get_buckets/v1",
+			rows:       `[{"id": "b1", "title": "artifacts"}, {"id": "b2", "title": "logs"}]`,
+			resolveKey: "logs",
+			resolveID:  "b2",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, client, cleanup := setupTestServer(func(w http.ResponseWriter, req *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.Write([]byte(`{"code": 0, "rows": ` + tt.rows + `, "list": {"length": 2}}`))
+			})
+			defer cleanup()
+
+			r := NewResolver(client)
+			id, err := r.Resolve(context.Background(), tt.name, tt.resolveKey)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if id != tt.resolveID {
+				t.Errorf("expected %s, got %s", tt.resolveID, id)
+			}
+		})
+	}
+}

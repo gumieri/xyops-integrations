@@ -74,7 +74,7 @@ No delete — clear fields via update. In Terraform this maps to `prevent_destro
 | `download_job_log/v1` | GET | Download job log (`id` + `token` params) — binary/plain bytes |
 | `update_job/v1` | POST | Edit job fields (`description`, `tag`, `progress`, ...) — **no upsert**, job must exist |
 | `update_active_job/v1` | POST | Update a running job's `description`/`progress` |
-| `skip_job_delay/v1` | POST | Skip the delay on a delayed job |
+| `job_skip_delay/v1` | POST | Skip the delay on a delayed job |
 | `job_toggle_notify_me/v1` | POST | Toggle "notify me" on a job — returns `{"code":0,"enabled":bool}` |
 | `manage_job_tickets/v1` | POST | Replace the tickets attached to a job |
 
@@ -229,4 +229,4 @@ Events, plugins, monitors, alerts, and roles reference other resources by human-
 2. On miss, queries the corresponding list endpoint and rebuilds the cache for that type.
 3. Returns the internal ID for the key.
 
-Supported resolver types: `tag`, `group`, `category`, `plugin`, `monitor`, `role`, `alert`, `api_key`, `webhook`, `event`, `channel`, `secret`, `bucket`.
+Supported resolver types: `tag`, `group`, `category`, `plugin`, `monitor`, `role`, `alert`, `api_key`, `webhook`, `event`, `channel`, `secret`, `bucket`. Note: `ticket` is not resolvable (use `GetByNum`), and `secret` list endpoints require admin privileges.

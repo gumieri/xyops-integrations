@@ -148,6 +148,12 @@ func (r *Resolver) listPairs(ctx context.Context, resourceType string) ([]keyIDP
 		return pairList(ctx, r.client.WebHooks.List, func(h WebHook) string { return h.ID }, func(h WebHook) string { return h.Title })
 	case "event":
 		return pairList(ctx, r.client.Events.List, func(e Event) string { return e.ID }, func(e Event) string { return e.Title })
+	case "channel":
+		return pairList(ctx, r.client.Channels.List, func(ch Channel) string { return ch.ID }, func(ch Channel) string { return ch.Title })
+	case "secret":
+		return pairList(ctx, r.client.Secrets.List, func(sc Secret) string { return sc.ID }, func(sc Secret) string { return sc.Title })
+	case "bucket":
+		return pairList(ctx, r.client.Buckets.List, func(b Bucket) string { return b.ID }, func(b Bucket) string { return b.Title })
 	default:
 		return nil, fmt.Errorf("unknown resource type %q", resourceType)
 	}
