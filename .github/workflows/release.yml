@@ -89,11 +89,27 @@ jobs:
           format: spdx-json
           output-file: xyops-integrations-${{ github.ref_name }}-spdx.json
 
+      - name: Generate SBOM for containers
+        run: |
+          set -e
+          VERSION="${{ github.ref_name }}"
+          IMAGE="ghcr.io/${{ github.repository }}"
+
+          for arch in amd64 arm64; do
+            echo "Generating SBOM for $arch"
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+              anchore/syft:latest \
+              "${IMAGE}:${VERSION}-${arch}" \
+              -o spdx-json > "xyops-integrations-${VERSION}-linux-${arch}.spdx.json"
+
+            echo "Validating SBOM for $arch"
+            jq . "xyops-integrations-${VERSION}-linux-${arch}.spdx.json" > /dev/null || exit 1
+          done
+
       - name: Sign images with provenance
         env:
           IMAGE: ghcr.io/${{ github.repository }}
         run: |
-          set -e
           VERSION="${{ github.ref_name }}"
 
           for arch in amd64 arm64; do
@@ -107,7 +123,7 @@ jobs:
             cosign attest \
               --yes \
               --type spdxjson \
-              --predicate xyops-integrations-${VERSION}-spdx.json \
+              --predicate xyops-integrations-${VERSION}-linux-${arch}.spdx.json \
               "${TAG}@${ARCH_DIGEST}"
           done
 
@@ -117,6 +133,8 @@ jobs:
 
           gh release upload "$VERSION" \
             xyops-integrations-${VERSION}-spdx.json \
+            xyops-integrations-${VERSION}-linux-amd64.spdx.json \
+            xyops-integrations-${VERSION}-linux-arm64.spdx.json \
             --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
