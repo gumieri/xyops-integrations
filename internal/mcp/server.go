@@ -30,6 +30,10 @@ func NewServer(c *sdk.Client) *mcp.Server {
 	registerServerTools(s, c)
 	registerConfigTools(s, c)
 	registerJobTools(s, c)
+	registerChannelTools(s, c)
+	registerSecretTools(s, c)
+	registerBucketTools(s, c)
+	registerTicketTools(s, c)
 
 	s.AddReceivingMiddleware(sanitizeToolSchemasMiddleware)
 
