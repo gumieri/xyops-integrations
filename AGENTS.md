@@ -61,6 +61,38 @@ Both the TF provider and MCP server use the same `sdk.Client` — the SDK is the
 - **MCP library**: Use `github.com/modelcontextprotocol/go-sdk` (official, not mark3labs)
 - **go.mod**: `github.com/gumieri/xyops-integrations`
 
+## Documentation & Privacy
+
+This is a public repository — assume anything committed is permanently public
+(history is not rewritten by default).
+
+- **No private infrastructure in tracked files**: never write internal
+  hostnames, URLs, endpoints, workspace slugs, tool names, or credentials into
+  code, tests, docs, commit messages, or PR text. Use the `nxample.com`
+  placeholder convention for all endpoints (see CONTRIBUTING.md).
+- **Internal design docs live outside this repo** (maintainer's private
+  knowledge base, linked from the issue tracker). `docs/` is
+  operator/user-facing reference only — design deliberation, decision
+  history, and withdrawn plans do not belong here.
+- **Ignored dirs stay untracked**: `.opencode/`, `.scratch-mcp/`,
+  `.scratch-opencode/`, `.env*`, `*.pem`, `*.key` hold local agent config and
+  live credentials. Ignore rules do not untrack already-added files, and
+  `git add -f` bypasses them — check `git status` / `git ls-files` before
+  committing any newly created config or scratch file.
+
+## Claim Discipline
+
+- **Verify before recording**: confirm claims about the codebase (grep,
+  tests, `git log`) before writing them into docs, CHANGELOG entries, PR
+  descriptions, or issue comments. Unverified "shipped"/"implemented" claims
+  are the top historical failure mode.
+- **Working tree ≠ git index**: filesystem tools (grep/ls) see the tree;
+  they say nothing about what git tracks. Tracking questions need
+  `git ls-files` or the hosting API.
+- **Timing flakes**: perf/benchmark-based tests are noisy on shared CI
+  runners — rerun and confirm the branch isn't stale against `main` before
+  treating a single failure as a regression.
+
 ## CI & Lint
 
 - **Linting (mandatory)**: Run `golangci-lint run ./...` after any change. CI blocks PRs on lint findings. Config lives in `.golangci.yml` (v2 schema): `gocyclo` ≥15, `funlen` 150/80, `nestif` 4, `staticcheck`, `govet` (all analyzers), `errcheck`, `misspell`, plus `gofmt`/`goimports` formatters. Test files (`*_test.go`) are excluded from linting.
@@ -68,6 +100,7 @@ Both the TF provider and MCP server use the same `sdk.Client` — the SDK is the
 - **Security scanning**: `.github/workflows/codeql.yml` runs CodeQL for Go on push/PR to `main` plus a weekly schedule (Mon 04:00 UTC).
 - **Dependencies**: `.github/dependabot.yml` opens weekly PRs for Go modules and GitHub Actions.
 - **Release**: Pushing a `vX.Y.Z` tag triggers `.github/workflows/release.yml`, which builds multi-arch container images (GHCR), runs GoReleaser (binaries, deb/rpm/arch, AUR), generates SPDX SBOMs, and cosign-signs images + checksums. GoReleaser itself runs `go test -race` and `go vet` before publishing.
+- **Merging workflow PRs**: a `gh` CLI token without the `workflow` scope cannot merge or update PRs that touch `.github/workflows/*` — apply such changes via a direct push and close the PR as superseded (note the reason in a comment).
 
 ## Build & Test
 
