@@ -27,8 +27,8 @@ func registerConfigTools(s *mcp.Server, c *sdk.Client) {
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "get_health",
 		Description: "Check the conductor's health (ping)",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, bool, error) {
-		return adaptResult(c.Health(ctx))
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, HealthResult, error) {
+		return adaptHealthResult(c.Health(ctx))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -54,4 +54,20 @@ func registerConfigTools(s *mcp.Server, c *sdk.Client) {
 		}
 		return adaptResult(c.GetMultiple.Get(ctx, *opts))
 	})
+}
+
+// HealthResult is the object-shaped output of get_health: the conductor's
+// ping is a bare boolean, but the MCP spec requires StructuredContent to be
+// a JSON object.
+type HealthResult struct {
+	Healthy bool `json:"healthy"`
+}
+
+// adaptHealthResult adapts the (bool, error) Health pair into the
+// (result, output, error) shape expected by mcp.ToolHandlerFor.
+func adaptHealthResult(ok bool, err error) (*mcp.CallToolResult, HealthResult, error) {
+	if err != nil {
+		return nil, HealthResult{}, err
+	}
+	return nil, HealthResult{Healthy: ok}, nil
 }

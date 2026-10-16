@@ -65,6 +65,24 @@ func adaptListResult[T any](v []T, err error) (*mcp.CallToolResult, ListResult[T
 	return nil, ListResult[T]{Items: v}, nil
 }
 
+// StatusResult wraps an acknowledgement ("deleted", "aborted", ...) so action
+// tools return an object-shaped StructuredContent instead of a bare string.
+// Strict client validators (e.g. the TS SDK 1.29.0 that opencode bundles)
+// require StructuredContent to be a record, not a primitive — the same
+// constraint [ListResult] addresses for list tools.
+type StatusResult struct {
+	Status string `json:"status"`
+}
+
+// adaptStatusResult adapts an acknowledgement (msg, error) pair into the
+// (result, output, error) shape expected by mcp.ToolHandlerFor.
+func adaptStatusResult(msg string, err error) (*mcp.CallToolResult, StatusResult, error) {
+	if err != nil {
+		return nil, StatusResult{}, err
+	}
+	return nil, StatusResult{Status: msg}, nil
+}
+
 // sanitizeToolSchemasMiddleware rewrites the tools/list response so every
 // tool's schemas pass client-side validation.
 //

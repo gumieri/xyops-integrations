@@ -43,7 +43,7 @@ func registerTagTools(s *mcp.Server, c *sdk.Client) {
 		Description: "Delete a tag by ID",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in struct {
 		ID string `json:"id" jsonschema:"the tag ID"`
-	}) (*mcp.CallToolResult, string, error) {
-		return adaptResult("deleted", c.Tags.Delete(ctx, in.ID))
+	}) (*mcp.CallToolResult, StatusResult, error) {
+		return adaptStatusResult("deleted", c.Tags.Delete(ctx, in.ID))
 	})
 }

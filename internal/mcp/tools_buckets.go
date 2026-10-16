@@ -52,8 +52,8 @@ func registerBucketTools(s *mcp.Server, c *sdk.Client) {
 		Description: "Delete a bucket by ID",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in struct {
 		ID string `json:"id" jsonschema:"the bucket ID"`
-	}) (*mcp.CallToolResult, string, error) {
-		return adaptResult("deleted", c.Buckets.Delete(ctx, in.ID))
+	}) (*mcp.CallToolResult, StatusResult, error) {
+		return adaptStatusResult("deleted", c.Buckets.Delete(ctx, in.ID))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -77,7 +77,7 @@ func registerBucketTools(s *mcp.Server, c *sdk.Client) {
 		Date     int64  `json:"date,omitempty" jsonschema:"file criterion: date (unix seconds)"`
 		Size     int64  `json:"size,omitempty" jsonschema:"file criterion: size in bytes"`
 		Username string `json:"username,omitempty" jsonschema:"file criterion: username"`
-	}) (*mcp.CallToolResult, string, error) {
+	}) (*mcp.CallToolResult, StatusResult, error) {
 		criteria := map[string]any{}
 		if in.Filename != "" {
 			criteria["filename"] = in.Filename
@@ -94,7 +94,7 @@ func registerBucketTools(s *mcp.Server, c *sdk.Client) {
 		if in.Username != "" {
 			criteria["username"] = in.Username
 		}
-		return adaptResult("deleted", c.Buckets.DeleteFile(ctx, in.ID, criteria))
+		return adaptStatusResult("deleted", c.Buckets.DeleteFile(ctx, in.ID, criteria))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -104,7 +104,7 @@ func registerBucketTools(s *mcp.Server, c *sdk.Client) {
 		ID          string `json:"id" jsonschema:"the bucket ID"`
 		DeleteFiles bool   `json:"files,omitempty" jsonschema:"delete all files"`
 		ClearData   bool   `json:"data,omitempty" jsonschema:"delete all data"`
-	}) (*mcp.CallToolResult, string, error) {
-		return adaptResult("emptied", c.Buckets.Empty(ctx, in.ID, in.DeleteFiles, in.ClearData))
+	}) (*mcp.CallToolResult, StatusResult, error) {
+		return adaptStatusResult("emptied", c.Buckets.Empty(ctx, in.ID, in.DeleteFiles, in.ClearData))
 	})
 }

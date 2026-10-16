@@ -55,6 +55,36 @@ func TestAdaptListResult(t *testing.T) {
 	}
 }
 
+func TestAdaptStatusResult(t *testing.T) {
+	result, output, err := adaptStatusResult("deleted", nil)
+	if result != nil || err != nil {
+		t.Fatalf("adaptStatusResult with success: result=%v err=%v", result, err)
+	}
+	if output.Status != "deleted" {
+		t.Fatalf("adaptStatusResult status = %q, want %q", output.Status, "deleted")
+	}
+
+	_, _, err = adaptStatusResult("deleted", http.ErrNotSupported)
+	if err != http.ErrNotSupported {
+		t.Fatalf("adaptStatusResult with error: err=%v", err)
+	}
+}
+
+func TestAdaptHealthResult(t *testing.T) {
+	result, output, err := adaptHealthResult(true, nil)
+	if result != nil || err != nil {
+		t.Fatalf("adaptHealthResult with success: result=%v err=%v", result, err)
+	}
+	if !output.Healthy {
+		t.Fatalf("adaptHealthResult healthy = %v, want true", output.Healthy)
+	}
+
+	_, _, err = adaptHealthResult(false, http.ErrNotSupported)
+	if err != http.ErrNotSupported {
+		t.Fatalf("adaptHealthResult with error: err=%v", err)
+	}
+}
+
 func TestIsObjectSchema(t *testing.T) {
 	tests := []struct {
 		name string

@@ -43,7 +43,7 @@ func registerCategoryTools(s *mcp.Server, c *sdk.Client) {
 		Description: "Delete a category by ID",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in struct {
 		ID string `json:"id" jsonschema:"the category ID"`
-	}) (*mcp.CallToolResult, string, error) {
-		return adaptResult("deleted", c.Categories.Delete(ctx, in.ID))
+	}) (*mcp.CallToolResult, StatusResult, error) {
+		return adaptStatusResult("deleted", c.Categories.Delete(ctx, in.ID))
 	})
 }

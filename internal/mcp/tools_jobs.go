@@ -67,8 +67,8 @@ func registerJobTools(s *mcp.Server, c *sdk.Client) {
 		Description: "Abort a job",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in struct {
 		JobID string `json:"job_id" jsonschema:"the job ID to abort"`
-	}) (*mcp.CallToolResult, string, error) {
-		return adaptResult("aborted", c.Jobs.Abort(ctx, in.JobID))
+	}) (*mcp.CallToolResult, StatusResult, error) {
+		return adaptStatusResult("aborted", c.Jobs.Abort(ctx, in.JobID))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -76,8 +76,8 @@ func registerJobTools(s *mcp.Server, c *sdk.Client) {
 		Description: "Delete a job",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in struct {
 		JobID string `json:"job_id" jsonschema:"the job ID to delete"`
-	}) (*mcp.CallToolResult, string, error) {
-		return adaptResult("deleted", c.Jobs.Delete(ctx, in.JobID))
+	}) (*mcp.CallToolResult, StatusResult, error) {
+		return adaptStatusResult("deleted", c.Jobs.Delete(ctx, in.JobID))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -85,8 +85,8 @@ func registerJobTools(s *mcp.Server, c *sdk.Client) {
 		Description: "Flush all queued jobs for an event",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in struct {
 		EventID string `json:"event_id" jsonschema:"the event ID"`
-	}) (*mcp.CallToolResult, string, error) {
-		return adaptResult("flushed", c.Jobs.FlushQueue(ctx, in.EventID))
+	}) (*mcp.CallToolResult, StatusResult, error) {
+		return adaptStatusResult("flushed", c.Jobs.FlushQueue(ctx, in.EventID))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -95,8 +95,8 @@ func registerJobTools(s *mcp.Server, c *sdk.Client) {
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in struct {
 		JobID string   `json:"job_id" jsonschema:"the job ID"`
 		Tags  []string `json:"tags" jsonschema:"the tags to set"`
-	}) (*mcp.CallToolResult, string, error) {
-		return adaptResult("updated", c.Jobs.ManageTags(ctx, in.JobID, in.Tags))
+	}) (*mcp.CallToolResult, StatusResult, error) {
+		return adaptStatusResult("updated", c.Jobs.ManageTags(ctx, in.JobID, in.Tags))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -105,8 +105,8 @@ func registerJobTools(s *mcp.Server, c *sdk.Client) {
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in struct {
 		JobID  string         `json:"job_id" jsonschema:"the job ID to resume"`
 		Params map[string]any `json:"params,omitempty" jsonschema:"optional params for the resumed job"`
-	}) (*mcp.CallToolResult, string, error) {
-		return adaptResult("resumed", c.Jobs.Resume(ctx, in.JobID, in.Params))
+	}) (*mcp.CallToolResult, StatusResult, error) {
+		return adaptStatusResult("resumed", c.Jobs.Resume(ctx, in.JobID, in.Params))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{

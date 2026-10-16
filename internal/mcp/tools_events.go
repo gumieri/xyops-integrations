@@ -44,8 +44,8 @@ func registerEventTools(s *mcp.Server, c *sdk.Client) {
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in struct {
 		ID         string `json:"id" jsonschema:"the event ID"`
 		DeleteJobs bool   `json:"delete_jobs,omitempty" jsonschema:"delete the event's jobs too"`
-	}) (*mcp.CallToolResult, string, error) {
+	}) (*mcp.CallToolResult, StatusResult, error) {
 		opts := &sdk.DeleteEventOpts{DeleteJobs: in.DeleteJobs}
-		return adaptResult("deleted", c.Events.Delete(ctx, in.ID, opts))
+		return adaptStatusResult("deleted", c.Events.Delete(ctx, in.ID, opts))
 	})
 }

@@ -133,13 +133,16 @@ func registerSearchTools(s *mcp.Server, c *sdk.Client) {
 		Query    string `json:"query,omitempty" jsonschema:"filter query"`
 		Compress bool   `json:"compress,omitempty" jsonschema:"gzip the export"`
 		Columns  string `json:"columns,omitempty" jsonschema:"comma-separated columns to export"`
-	}) (*mcp.CallToolResult, string, error) {
+	}) (*mcp.CallToolResult, map[string]string, error) {
 		var columns []string
 		if in.Columns != "" {
 			columns = append(columns, splitComma(in.Columns)...)
 		}
 		data, err := c.Search.BulkExport(ctx, in.Index, columns, in.Format, in.Query, in.Compress)
-		return adaptResult(string(data), err)
+		if err != nil {
+			return nil, nil, err
+		}
+		return nil, map[string]string{"data": string(data)}, nil
 	})
 
 	registerMarketplaceTool(s, c)

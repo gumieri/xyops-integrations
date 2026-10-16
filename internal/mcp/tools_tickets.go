@@ -58,8 +58,8 @@ func registerTicketTools(s *mcp.Server, c *sdk.Client) {
 		Description: "Delete a ticket by ID",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in struct {
 		ID string `json:"id" jsonschema:"the ticket ID"`
-	}) (*mcp.CallToolResult, string, error) {
-		return adaptResult("deleted", c.Tickets.Delete(ctx, in.ID))
+	}) (*mcp.CallToolResult, StatusResult, error) {
+		return adaptStatusResult("deleted", c.Tickets.Delete(ctx, in.ID))
 	})
 
 	mcp.AddTool(s, &mcp.Tool{

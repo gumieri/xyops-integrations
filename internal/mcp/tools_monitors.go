@@ -43,7 +43,7 @@ func registerMonitorTools(s *mcp.Server, c *sdk.Client) {
 		Description: "Delete a monitor by ID",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in struct {
 		ID string `json:"id" jsonschema:"the monitor ID"`
-	}) (*mcp.CallToolResult, string, error) {
-		return adaptResult("deleted", c.Monitors.Delete(ctx, in.ID))
+	}) (*mcp.CallToolResult, StatusResult, error) {
+		return adaptStatusResult("deleted", c.Monitors.Delete(ctx, in.ID))
 	})
 }
