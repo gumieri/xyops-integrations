@@ -35,7 +35,7 @@ Both the TF provider and MCP server use the same `sdk.Client` — the SDK is the
 - **get_workflow_job_summary filter**: `workflow.job`, NOT `id`
 - **get_jobs response**: `jobs` array, NOT `rows`
 - **get_servers**: GET `get_servers/v1` (not POST); returns `servers` OBJECT keyed by ID + `masters`; `ServersService.List` flattens to sorted `[]Server`
-- **Server model**: `info.os/cpu/memory/virt` nested; NOT flat `os`/`arch`/`status` (legacy `Satellite` type kept for compat)
+- **Server model**: `info.os/cpu/memory/virt` nested; NOT flat `os`/`arch`/`status` (the legacy `Satellite` struct was removed in XYOINT-16; `SatelliteService`/`SatelliteConfig` remain for satellite bootstrap, exposed via the `get_satellite_releases`/`get_satellite_token` MCP tools)
 - **satellite/config**: plain JSON config.json document, NO `{code, data}` envelope
 - **Health**: `ping/v1`, NOT `/health`
 - **Job model**: `event`/`title` (NOT `event_id`/`event_name`), `Elapsed` is float, `Code` may be string (`0` or `"warning"`/`"critical"`/`"abort"`), `Created`/`Completed`/`Started` are **fractional** epoch (float64)
@@ -57,7 +57,7 @@ Both the TF provider and MCP server use the same `sdk.Client` — the SDK is the
 - **get_job/v1 shape**: Returns a workflow-graph document (`{code, job:{type,workflow:{nodes,connections,state,jobs}}}`) for workflow jobs, NOT the flat `Job` record used by `search_jobs`/`get_jobs`. `JobsService.Get` unmarshals into `Job` and will yield mostly-empty fields for workflows. Use `search_jobs`/`get_jobs` for flat job records.
 - **Limits/Actions (empirical, v1.0.49)**: `Event.Limits[].type` values observed in production: `job`, `queue`, `retry`, `time`. `Event.Actions[].condition` observed: `success` (docs mention `error`/`warning`; don't assume only one).
 - **List endpoints**: Exist for ALL resource types via GET `get_*/v1`
-- **Key resolution**: The provider passes human-readable keys through to SDK methods; `sdk.Resolver` exists for key→ID lookups but lives in the SDK layer and is NOT used by the provider. Do NOT resolve keys via plan modifiers.
+- **Key resolution**: The provider passes human-readable keys through to SDK methods. A `sdk.Resolver` key→ID helper used to exist but was removed in the dead-code sweep (XYOINT-16) — no in-repo consumer used it and it carried a per-resource maintenance tax. Do NOT resolve keys via plan modifiers.
 - **MCP library**: Use `github.com/modelcontextprotocol/go-sdk` (official, not mark3labs)
 - **go.mod**: `github.com/gumieri/xyops-integrations`
 

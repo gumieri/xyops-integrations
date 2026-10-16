@@ -338,6 +338,7 @@ type ServerVirt struct {
 
 // Conductor represents a conductor/peer server in the masters map of
 // get_servers/v1.
+// Conductor is a conductor server entry from the masters list.
 type Conductor struct {
 	ID      string         `json:"id,omitempty"`
 	Online  bool           `json:"online,omitempty"`
@@ -346,17 +347,6 @@ type Conductor struct {
 	Version string         `json:"version,omitempty"`
 	Ping    int            `json:"ping,omitempty"`
 	Stats   map[string]any `json:"stats,omitempty"`
-}
-
-// Satellite is a lightweight subset of Server for backward compatibility with
-// the original SDK API (deprecated; use Server in new code).
-type Satellite struct {
-	Hostname string   `json:"hostname"`
-	OS       string   `json:"os"`
-	Arch     string   `json:"arch"`
-	Status   string   `json:"status"`
-	Groups   []string `json:"groups,omitempty"`
-	Tags     []string `json:"tags,omitempty"`
 }
 
 // SatelliteConfig is the bootstrap response from satellite/config. Unlike the

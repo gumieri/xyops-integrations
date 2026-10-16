@@ -75,6 +75,7 @@ var goldenEndpoints = []goldenEndpoint{
 	{name: "secrets_list", path: "get_secrets/v1", parse: typedParse[sdk.SecretListResponse]()},
 	{name: "buckets_list", path: "get_buckets/v1", parse: typedParse[sdk.BucketListResponse]()},
 	{name: "servers_list", path: "get_servers/v1", parse: typedParse[sdk.ServerListResponse]()},
+	{name: "satellite_releases", path: "get_satellite_releases/v1", parse: typedParse[map[string]any]()},
 	{name: "config_get", path: "admin_get_config/v1", method: "POST", parse: typedParse[sdk.ConfigResponse](), strip: []string{"config.intl"}},
 	{name: "get_multiple", path: "get_multiple/v1?lists=tags,groups,events", parse: typedParse[sdk.GetMultipleResponse]()},
 	{name: "search_jobs", path: "search_jobs/v1?limit=5"},       // shape varies with content; envelope check only

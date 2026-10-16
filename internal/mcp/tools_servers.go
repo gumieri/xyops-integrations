@@ -113,4 +113,22 @@ func registerServerTools(s *mcp.Server, c *sdk.Client) {
 	}) (*mcp.CallToolResult, StatusResult, error) {
 		return adaptStatusResult("deleted", c.Servers.DeleteSnapshot(ctx, in.SnapshotID))
 	})
+
+	mcp.AddTool(s, &mcp.Tool{
+		Name:        "get_satellite_releases",
+		Description: "List available xyops satellite binary releases",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, map[string]any, error) {
+		return adaptResult(c.Satellite.Releases(ctx))
+	})
+
+	mcp.AddTool(s, &mcp.Tool{
+		Name:        "get_satellite_token",
+		Description: "Generate/refresh the satellite bootstrap token (invalidates the previous token)",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, map[string]string, error) {
+		token, err := c.Satellite.Token(ctx)
+		if err != nil {
+			return nil, nil, err
+		}
+		return nil, map[string]string{"token": token}, nil
+	})
 }
