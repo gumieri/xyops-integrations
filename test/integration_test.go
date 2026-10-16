@@ -321,6 +321,15 @@ func TestAPIKeyWriteOnly(t *testing.T) {
 func TestJobTriggerAndSearch(t *testing.T) {
 	skipIfNoClient(t)
 
+	// Fires a real job on the target instance. Additionally gated because
+	// run_event/v1 on v1.0.90 rejects manual runs with "Event does not
+	// allow manual job runs" even for enabled events with a stored manual
+	// trigger and an admin key — the server-side gate is under
+	// investigation (docs/api-reference.md).
+	if os.Getenv("XYOPS_JOB_TRIGGER") == "" {
+		t.Skip("set XYOPS_JOB_TRIGGER=1 to fire a real job; run_event manual-run gate under investigation")
+	}
+
 	// v1.0.90+ requires a category on event create; reuse the first one.
 	cats, err := xyopsClient.Categories.List(t.Context())
 	if err != nil {
@@ -330,13 +339,27 @@ func TestJobTriggerAndSearch(t *testing.T) {
 		t.Fatal("no categories on instance; event create requires one on v1.0.90+")
 	}
 
+	// v1.0.90+ requires targets on an enabled event; use the first group.
+	groups, err := xyopsClient.Groups.List(t.Context())
+	if err != nil {
+		t.Fatalf("list groups: %v", err)
+	}
+	if len(groups) == 0 {
+		t.Skip("no groups on instance; cannot target a job trigger test")
+	}
+
 	event, err := xyopsClient.Events.Create(t.Context(), &sdk.Event{
 		Title:    "it-job-event",
 		Plugin:   "testplug",
 		Category: cats[0].ID,
-		Algo:     "random", // v1.0.90+ requires an explicit target algorithm on create
-		// NOTE: needs real Targets (an existing group/server) before this
-		// test can trigger a job; currently run only with explicit go-ahead.
+		Targets:  []string{groups[0].ID},
+		Triggers: []sdk.Trigger{
+			// Manual-run permission comes from an explicit manual trigger;
+			// without it run_event is rejected ("does not allow manual job runs").
+			{Type: "manual"},
+		},
+		Params:  map[string]any{"duration": "1"}, // keep the triggered job short
+		Algo:    "random",                        // v1.0.90+ requires an explicit target algorithm on create
 		Enabled: true,
 	})
 	if err != nil {

@@ -56,7 +56,7 @@ No delete — clear fields via update. In Terraform this maps to `prevent_destro
 
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
-| `run_event/v1` | POST | **JOB DISPATCH** — trigger event execution on demand. Supports `params`, `input`, `tags`, `test: true`. Match by `id` or `title`. Returns `{"code":0,"id":"j..."}` where `id` is the job ID; call `get_job/v1?id=j...` for details and token. |
+| `run_event/v1` | POST | **JOB DISPATCH** — trigger event execution on demand. Supports `params`, `input`, `tags`, `test: true`. Match by `id` or `title`. Returns `{"code":0,"id":"j..."}` where `id` is the job ID; call `get_job/v1?id=j...` for details and token. **v1.0.90 gate (under investigation)**: manual runs are rejected with `code:"event"` / `Event does not allow manual job runs` even for an enabled event with a stored `{"type":"manual"}` trigger and an admin key; `test: true` returns an empty body. |
 | `get_active_jobs/v1` | GET | List active jobs (queued/ready/active/finishing) with filters + pagination. Filter by `event` (NOT `event_id`); also `state`, `server`, `workflow.job`. |
 | `get_active_job_summary/v1` | GET | Summarize active jobs by event/state/source/targets |
 | `get_workflow_job_summary/v1` | GET | Summarize workflow jobs by node (`workflow.job` filter param required) |
