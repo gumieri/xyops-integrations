@@ -87,7 +87,9 @@ func (r *webHookResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 							Required: true,
 						},
 						"value": schema.StringAttribute{
-							Required: true,
+							Required:    true,
+							Sensitive:   true,
+							Description: "Header value. Webhook headers commonly carry auth tokens.",
 						},
 					},
 				},
