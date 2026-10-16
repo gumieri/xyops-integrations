@@ -62,7 +62,8 @@ type Plugin struct {
 
 // Trigger represents an event trigger (schedule/interval/manual/single).
 type Trigger struct {
-	Type     string `json:"type"` // "manual", "schedule", "interval", "single"
+	Type     string `json:"type"`    // "manual", "schedule", "interval", "single"
+	Enabled  bool   `json:"enabled"` // manual triggers MUST be enabled:true or run_event rejects manual runs ("Event does not allow manual job runs")
 	Years    []int  `json:"years,omitempty"`
 	Months   []int  `json:"months,omitempty"`
 	Days     []int  `json:"days,omitempty"`

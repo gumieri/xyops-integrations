@@ -354,9 +354,10 @@ func TestJobTriggerAndSearch(t *testing.T) {
 		Category: cats[0].ID,
 		Targets:  []string{groups[0].ID},
 		Triggers: []sdk.Trigger{
-			// Manual-run permission comes from an explicit manual trigger;
-			// without it run_event is rejected ("does not allow manual job runs").
-			{Type: "manual"},
+			// Manual-run permission requires an ENABLED manual trigger —
+			// without enabled:true run_event rejects with
+			// "Event does not allow manual job runs".
+			{Type: "manual", Enabled: true},
 		},
 		Params:  map[string]any{"duration": "1"}, // keep the triggered job short
 		Algo:    "random",                        // v1.0.90+ requires an explicit target algorithm on create
@@ -368,9 +369,16 @@ func TestJobTriggerAndSearch(t *testing.T) {
 	t.Cleanup(func() {
 		ctx, cancel := cleanupCtx()
 		defer cancel()
-		if err := xyopsClient.Events.Delete(ctx, event.ID, &sdk.DeleteEventOpts{DeleteJobs: true}); err != nil {
-			t.Errorf("cleanup delete event: %v", err)
+		// The event cannot be deleted while a triggered job is still
+		// active; wait briefly for the short test job to finish.
+		var err error
+		for i := 0; i < 20; i++ {
+			if err = xyopsClient.Events.Delete(ctx, event.ID, &sdk.DeleteEventOpts{DeleteJobs: true}); err == nil {
+				return
+			}
+			time.Sleep(500 * time.Millisecond)
 		}
+		t.Errorf("cleanup delete event: %v", err)
 	})
 
 	res, err := xyopsClient.Jobs.Trigger(t.Context(), event.ID, nil)
