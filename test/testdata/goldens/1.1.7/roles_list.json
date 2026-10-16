@@ -1,0 +1,26 @@
+{
+  "code": 0,
+  "list": {
+    "length": 1
+  },
+  "rows": [
+    {
+      "categories": [],
+      "created": 1786648277,
+      "enabled": true,
+      "groups": [],
+      "icon": "",
+      "id": "all",
+      "modified": 1786648277,
+      "notes": "A base set of privileges for all users to enjoy.",
+      "privileges": {
+        "create_events": true,
+        "edit_events": true,
+        "run_jobs": true,
+        "tag_jobs": true
+      },
+      "title": "All Users",
+      "username": "admin"
+    }
+  ]
+}

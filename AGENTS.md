@@ -114,3 +114,12 @@ golangci-lint run ./...
 Mise tasks: `mise run build|test|race|lint|vet|validate-all|snapshot|release`
 
 Acceptance tests: `TF_ACC=1 go test ./internal/provider/... -v -count=1 -run "^TestAcc"` (requires `XYOPS_BASE_URL` + `XYOPS_API_KEY`)
+
+## Testing Policy (XYOINT-15)
+
+xyops ships no machine-readable API spec, so external truth is **captured**, never hand-duplicated:
+
+- **Contract split**: Go tests assert the SDK contract only (wire round-trip, envelope parsing, quirk absorption). xyops *behavior* (required params, validation policy) is smoke-tested and documented in `docs/api-reference.md` — behavioral assertions in Go tests are duplicity that masks drift.
+- **Golden wire captures**: `XYOPS_CAPTURE_GOLDENS=1` re-fetches read-only endpoints into `test/testdata/goldens/<version>/`; CI (`TestGoldenWireContracts`, offline) asserts the SDK still unmarshals every captured body. Re-capture on every xyops version bump — the capture diff is the API changelog.
+- **Version pinning**: `TestConductorVersion` logs the live conductor version; `XYOPS_EXPECT_VERSION=<ver>` fails on mismatch.
+- **Dynamic discovery**: tests derive instance data (categories, plugins, groups) from the instance itself — never hardcode names or IDs.

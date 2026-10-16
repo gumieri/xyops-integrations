@@ -1,0 +1,90 @@
+{
+  "code": 0,
+  "list": {
+    "length": 5
+  },
+  "rows": [
+    {
+      "actions": [],
+      "created": 1786648277,
+      "enabled": true,
+      "expression": "monitors.load_avg \u003e= (cpu.cores + 1)",
+      "groups": [],
+      "id": "load_avg_high",
+      "message": "CPU load average is too high: {{float(monitors.load_avg)}} ({{cpu.cores}} CPU cores)",
+      "modified": 1786648277,
+      "monitor_id": "load_avg",
+      "notes": "",
+      "revision": 1,
+      "samples": 1,
+      "title": "High CPU Load",
+      "username": "admin"
+    },
+    {
+      "actions": [],
+      "created": 1786648277,
+      "enabled": true,
+      "expression": "memory.available \u003c (memory.total * 0.05)",
+      "groups": [],
+      "id": "mem_free_low",
+      "message": "Less than 5% of total memory is available ({{bytes(memory.available)}} of {{bytes(memory.total)}})",
+      "modified": 1786648277,
+      "monitor_id": "mem_free",
+      "notes": "",
+      "revision": 1,
+      "samples": 1,
+      "title": "Low Memory",
+      "username": "admin"
+    },
+    {
+      "actions": [],
+      "created": 1786648277,
+      "enabled": true,
+      "expression": "monitors.io_wait \u003e= 75",
+      "groups": [],
+      "id": "io_wait_high",
+      "message": "Disk I/O wait is too high: {{pct(monitors.io_wait)}}",
+      "modified": 1786648277,
+      "monitor_id": "io_wait",
+      "notes": "",
+      "revision": 1,
+      "samples": 1,
+      "title": "High I/O Wait",
+      "username": "admin"
+    },
+    {
+      "actions": [],
+      "created": 1786648277,
+      "enabled": true,
+      "expression": "monitors.disk_usage_root \u003e= 90",
+      "groups": [],
+      "id": "disk_usage_root_high",
+      "message": "Root filesystem is {{pct(monitors.disk_usage_root)}} full.",
+      "modified": 1786648277,
+      "monitor_id": "disk_usage_root",
+      "notes": "",
+      "revision": 1,
+      "samples": 1,
+      "title": "Disk Full",
+      "username": "admin"
+    },
+    {
+      "abort_jobs": false,
+      "actions": [],
+      "created": 1786648277,
+      "enabled": true,
+      "expression": "monitors.active_jobs \u003e= 50",
+      "groups": [],
+      "id": "active_jobs_high",
+      "limit_jobs": true,
+      "message": "Active job count is too high: {{number(monitors.active_jobs)}}",
+      "modified": 1786648277,
+      "monitor_id": "active_jobs",
+      "notes": "",
+      "revision": 1,
+      "samples": 1,
+      "title": "High Active Jobs",
+      "username": "admin"
+    }
+  ]
+}

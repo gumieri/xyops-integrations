@@ -1,0 +1,23 @@
+{
+  "code": 0,
+  "list": {
+    "length": 1
+  },
+  "rows": [
+    {
+      "actions": [],
+      "color": "plain",
+      "created": 1786648277,
+      "enabled": true,
+      "icon": "",
+      "id": "general",
+      "limits": [],
+      "modified": 1786648277,
+      "notes": "For events that don't fit anywhere else.",
+      "revision": 1,
+      "sort_order": 0,
+      "title": "General",
+      "username": "admin"
+    }
+  ]
+}

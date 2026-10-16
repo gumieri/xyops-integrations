@@ -1,0 +1,36 @@
+{
+  "code": 0,
+  "list": {
+    "length": 1
+  },
+  "rows": [
+    {
+      "body": "{\n\t\"text\": \"{{text}}\",\n\t\"content\": \"{{text}}\",\n\t\"message\": \"{{text}}\"\n}",
+      "created": 1786648277,
+      "enabled": true,
+      "follow": false,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "User-Agent",
+          "value": "xyOps/WebHook"
+        }
+      ],
+      "icon": "",
+      "id": "example_hook",
+      "method": "POST",
+      "modified": 1786648277,
+      "notes": "An example web hook for demonstration purposes.",
+      "retries": 0,
+      "revision": 1,
+      "ssl_cert_bypass": false,
+      "timeout": 30,
+      "title": "Example Hook",
+      "url": "https://httpbin.org/post",
+      "username": "admin"
+    }
+  ]
+}

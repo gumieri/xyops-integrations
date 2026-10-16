@@ -1,0 +1,38 @@
+{
+  "code": 0,
+  "epoch": 1792163357.503,
+  "events": [],
+  "groups": [
+    {
+      "alert_actions": [],
+      "created": 1786648277,
+      "hostname_match": ".+",
+      "id": "main",
+      "modified": 1786648277,
+      "revision": 1,
+      "sort_order": 0,
+      "title": "Main Group",
+      "username": "admin"
+    }
+  ],
+  "tags": [
+    {
+      "created": 1786648277,
+      "icon": "alert-rhombus",
+      "id": "important",
+      "modified": 1786648277,
+      "revision": 1,
+      "title": "Important",
+      "username": "admin"
+    },
+    {
+      "created": 1786648277,
+      "icon": "flag-checkered",
+      "id": "flag",
+      "modified": 1786648277,
+      "revision": 1,
+      "title": "Flag",
+      "username": "admin"
+    }
+  ]
+}

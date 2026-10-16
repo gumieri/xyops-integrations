@@ -1,0 +1,30 @@
+{
+  "code": 0,
+  "list": {
+    "first_page": 0,
+    "last_page": 0,
+    "length": 1,
+    "page_size": 100,
+    "type": "list"
+  },
+  "rows": [
+    {
+      "active": 1,
+      "created": 1786649110,
+      "description": "",
+      "expires": 0,
+      "id": "kmsrwr0n4vhfv3hl",
+      "key": "cf9fd8857065b6084e28d79aea5440f3906b8bf6bced5a5a0afba9c3769ae37b",
+      "mask": "i4CU********ZYjM",
+      "max_per_sec": 0,
+      "modified": 1786665748,
+      "privileges": {
+        "admin": true
+      },
+      "revision": 2,
+      "roles": [],
+      "title": "default",
+      "username": "rafael"
+    }
+  ]
+}

@@ -1,0 +1,381 @@
+{
+  "code": 0,
+  "list": {
+    "length": 6
+  },
+  "rows": [
+    {
+      "command": "[test-plugin]",
+      "created": 1786648277,
+      "enabled": 1,
+      "icon": "test-tube",
+      "id": "testplug",
+      "kill": "parent",
+      "modified": 1786648277,
+      "notes": "The Test Plugin exists mainly to test xyOps, but it can also be useful for testing pieces of workflows.  It outputs sample data and optionally a sample file, which are passed to downstream events, if connected.  It can also simulate various job outcomes (success, fail, etc.).",
+      "params": [
+        {
+          "id": "duration",
+          "required": true,
+          "title": "Test Duration (seconds)",
+          "type": "text",
+          "value": 60,
+          "variant": "number"
+        },
+        {
+          "id": "action",
+          "title": "Simulate Result",
+          "type": "select",
+          "value": "Success, Error, Warning, Critical, Crash"
+        },
+        {
+          "id": "custom",
+          "title": "Custom Value",
+          "type": "text",
+          "value": ""
+        },
+        {
+          "id": "burn",
+          "title": "Burn Memory/CPU",
+          "type": "checkbox",
+          "value": false
+        },
+        {
+          "id": "network",
+          "title": "Generate Network Traffic",
+          "type": "checkbox",
+          "value": false
+        },
+        {
+          "id": "upload",
+          "title": "Upload Sample File",
+          "type": "checkbox",
+          "value": false
+        }
+      ],
+      "revision": 1,
+      "stock": true,
+      "title": "Test Plugin",
+      "type": "event",
+      "username": "admin"
+    },
+    {
+      "command": "[shell-plugin]",
+      "created": 1786648277,
+      "enabled": 1,
+      "icon": "console",
+      "id": "shellplug",
+      "kill": "all",
+      "modified": 1786648277,
+      "notes": "The Shell Plugin allows you to execute arbitrary shell scripts (or any language that supports a Shebang).  Simply select the Shell Plugin when creating an event or workflow, and enter your script.  This is an easy way to get up and running quickly, because you don't have to worry about reading or writing JSON.",
+      "params": [
+        {
+          "id": "script",
+          "locked": true,
+          "required": true,
+          "title": "Script Source",
+          "type": "code",
+          "value": "#!/bin/sh\n\n# Enter your shell script code here"
+        },
+        {
+          "id": "annotate",
+          "title": "Add Date/Time Stamps to Log",
+          "type": "checkbox",
+          "value": false
+        }
+      ],
+      "revision": 1,
+      "stock": true,
+      "title": "Shell Script",
+      "type": "event",
+      "username": "admin"
+    },
+    {
+      "command": "[http-plugin]",
+      "created": 1786648277,
+      "enabled": 1,
+      "icon": "wan",
+      "id": "httpplug",
+      "kill": "parent",
+      "modified": 1786648277,
+      "notes": "The HTTP Request Plugin allows you to send simple GET, HEAD or POST requests to any URL, and log the response.  You can specify custom HTTP request headers, and also supply regular expressions to match a successful response based on the content.",
+      "params": [
+        {
+          "id": "method",
+          "title": "Method",
+          "type": "select",
+          "value": "GET, HEAD, POST, PUT, DELETE"
+        },
+        {
+          "id": "url",
+          "locked": true,
+          "required": true,
+          "title": "URL",
+          "type": "text",
+          "value": "https://"
+        },
+        {
+          "id": "headers",
+          "title": "Request Headers",
+          "type": "textarea",
+          "value": "User-Agent: xyOps/HTTP-Plugin"
+        },
+        {
+          "id": "data",
+          "title": "POST Data",
+          "type": "textarea",
+          "value": ""
+        },
+        {
+          "id": "timeout",
+          "title": "Timeout (Seconds)",
+          "type": "text",
+          "value": "30",
+          "variant": "number"
+        },
+        {
+          "id": "idle_timeout",
+          "title": "Idle Timeout (Seconds)",
+          "type": "text",
+          "value": "30",
+          "variant": "number"
+        },
+        {
+          "id": "connect_timeout",
+          "title": "Connect Timeout (Seconds)",
+          "type": "text",
+          "value": "10",
+          "variant": "number"
+        },
+        {
+          "id": "success_match",
+          "title": "Success Match",
+          "type": "text",
+          "value": ""
+        },
+        {
+          "id": "error_match",
+          "title": "Error Match",
+          "type": "text",
+          "value": ""
+        },
+        {
+          "id": "follow",
+          "title": "Follow Redirects",
+          "type": "checkbox",
+          "value": false
+        },
+        {
+          "id": "download",
+          "title": "Download File",
+          "type": "checkbox",
+          "value": false
+        },
+        {
+          "id": "ssl_cert_bypass",
+          "title": "SSL Cert Bypass",
+          "type": "checkbox",
+          "value": false
+        }
+      ],
+      "revision": 1,
+      "stock": true,
+      "title": "HTTP Request",
+      "type": "event",
+      "username": "admin"
+    },
+    {
+      "command": "[docker-plugin]",
+      "created": 1786648277,
+      "enabled": true,
+      "icon": "docker",
+      "id": "dockerplug",
+      "kill": "all",
+      "modified": 1786648277,
+      "notes": "Use this Plugin to run custom scripts inside a Docker container.",
+      "params": [
+        {
+          "caption": "Enter the name of the Docker image to use, which can be local or remote.",
+          "id": "image_name",
+          "locked": true,
+          "required": true,
+          "title": "Image Name",
+          "type": "text",
+          "value": "ghcr.io/pixlcore/xyops-shell-image",
+          "variant": "text"
+        },
+        {
+          "caption": "Enter the desired version of the image to use, or use \"latest\" for the latest version.",
+          "id": "image_ver",
+          "locked": true,
+          "required": true,
+          "title": "Image Version",
+          "type": "text",
+          "value": "latest",
+          "variant": "text"
+        },
+        {
+          "caption": "Enter the desired name of the Docker container, which can contain placeholder macros from the job data.",
+          "id": "cont_name",
+          "locked": false,
+          "required": true,
+          "title": "Container Name",
+          "type": "text",
+          "value": "xyops-job-{{id}}",
+          "variant": "text"
+        },
+        {
+          "caption": "Set the maximum number of CPU cores the container is allowed to use, or 0 for unlimited.",
+          "id": "cont_cpus",
+          "locked": false,
+          "required": false,
+          "title": "Max CPUs",
+          "type": "text",
+          "value": 1,
+          "variant": "number"
+        },
+        {
+          "caption": "Enter the maximum amount of memory to allow the container to use, or leave blank for unlimited.",
+          "id": "cont_mem",
+          "locked": false,
+          "required": false,
+          "title": "Max Memory",
+          "type": "text",
+          "value": "1 GB",
+          "variant": "text"
+        },
+        {
+          "caption": "Optionally specify a Docker network name for the container to join.",
+          "id": "cont_net",
+          "locked": false,
+          "required": false,
+          "title": "Join Network",
+          "type": "text",
+          "value": "",
+          "variant": "text"
+        },
+        {
+          "caption": "Optionally add any extra command-line arguments to pass to `docker run` (for e.g. volume mounts).",
+          "id": "cont_extras",
+          "locked": true,
+          "required": false,
+          "title": "Command Extras",
+          "type": "text",
+          "value": "",
+          "variant": "text"
+        },
+        {
+          "caption": "Enter the initial command to run as the container starts.  It is recommended to use [xyrun](https://github.com/pixlcore/xyrun) for this, so resources are monitored, and files are managed properly.\n",
+          "id": "cont_cmd",
+          "locked": true,
+          "required": false,
+          "title": "Launch Command",
+          "type": "text",
+          "value": "xyrun",
+          "variant": "text"
+        },
+        {
+          "caption": "Choose whether you want the entire job JSON data to be sent to STDIN, or only the script source (advanced).",
+          "id": "run_mode",
+          "locked": false,
+          "title": "Run Mode",
+          "type": "select",
+          "value": "Send Job JSON, Send Script Source"
+        },
+        {
+          "caption": "Enter the code to run inside the container.  You can use any language that supports a shebang line.",
+          "id": "script",
+          "locked": true,
+          "required": true,
+          "title": "Script Source",
+          "type": "code",
+          "value": "#!/bin/sh\n\n# Enter your shell script code here"
+        },
+        {
+          "caption": "Run an \"init\" inside the container that forwards signals and reaps processes.",
+          "id": "cont_init",
+          "locked": false,
+          "title": "Init process manager",
+          "type": "checkbox",
+          "value": true
+        },
+        {
+          "caption": "Automatically delete the container after the job completes (recommended).",
+          "id": "cont_rm",
+          "locked": false,
+          "title": "Ephemeral Container",
+          "type": "checkbox",
+          "value": true
+        },
+        {
+          "caption": "Enable verbose debug logging (raw docker command, etc.).",
+          "id": "verbose",
+          "locked": false,
+          "title": "Verbose Logging",
+          "type": "checkbox",
+          "value": false
+        }
+      ],
+      "revision": 1,
+      "runner": true,
+      "stock": true,
+      "title": "Docker Run",
+      "type": "event",
+      "username": "admin"
+    },
+    {
+      "command": "[hook-plugin]",
+      "created": 1786648277,
+      "enabled": true,
+      "gid": "",
+      "icon": "webhook",
+      "id": "hookplug",
+      "kill": "parent",
+      "modified": 1786648277,
+      "notes": "This Plugin fires a custom web hook as job instead of an action.\n",
+      "params": [
+        {
+          "caption": "Select the desired web hook to fire.",
+          "id": "web_hook",
+          "list_id": "web_hooks",
+          "locked": false,
+          "multiple": false,
+          "required": true,
+          "title": "Web Hook",
+          "type": "system"
+        },
+        {
+          "caption": "Optionally enter custom text to be appended to the end of the web hook system message.",
+          "id": "text",
+          "locked": false,
+          "regex": "",
+          "required": false,
+          "title": "Custom Text",
+          "type": "textarea",
+          "value": ""
+        }
+      ],
+      "revision": 1,
+      "runner": false,
+      "script": "",
+      "title": "Fire Web Hook",
+      "type": "event",
+      "uid": ""
+    },
+    {
+      "command": "/bin/sh",
+      "created": 1786648277,
+      "enabled": true,
+      "format": "text",
+      "groups": [],
+      "id": "open_files",
+      "modified": 1786648277,
+      "notes": "This is for Linux only.",
+      "revision": 1,
+      "script": "cat /proc/sys/fs/file-nr",
+      "title": "Count Open Files",
+      "type": "monitor",
+      "username": "admin"
+    }
+  ]
+}

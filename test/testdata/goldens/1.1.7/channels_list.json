@@ -1,0 +1,27 @@
+{
+  "code": 0,
+  "list": {
+    "length": 1
+  },
+  "rows": [
+    {
+      "created": 1786648277,
+      "email": "",
+      "enabled": true,
+      "icon": "",
+      "id": "sev1",
+      "modified": 1786648277,
+      "notes": "For major events that require everyone's attention right away.",
+      "revision": 1,
+      "run_event": "",
+      "shell_exec": "",
+      "sound": "attention-3.mp3",
+      "title": "Severity 1",
+      "username": "admin",
+      "users": [
+        "admin"
+      ],
+      "web_hook": ""
+    }
+  ]
+}
