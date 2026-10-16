@@ -71,6 +71,7 @@ type Trigger struct {
 	Minutes  []int  `json:"minutes,omitempty"`
 	Timezone string `json:"timezone,omitempty"`
 	Duration int    `json:"duration,omitempty"` // interval: seconds
+	Start    int64  `json:"start,omitempty"`    // interval: start anchor, unix seconds or ms (validated by v1.0.90+)
 	Epoch    int64  `json:"epoch,omitempty"`    // single: unix timestamp
 }
 
@@ -85,12 +86,13 @@ type Limit struct {
 
 // Action
 type Action struct {
-	Condition string `json:"condition,omitempty"` // "error", "success", "always"
-	Type      string `json:"type"`                // "email", "web_hook", "event"
-	Email     string `json:"email,omitempty"`
-	WebHook   string `json:"web_hook,omitempty"`
-	Event     string `json:"event,omitempty"`
-	Enabled   bool   `json:"enabled"`
+	Condition string   `json:"condition,omitempty"` // "error", "success", "always"
+	Type      string   `json:"type"`                // "email", "web_hook", "event"
+	Email     string   `json:"email,omitempty"`
+	WebHook   string   `json:"web_hook,omitempty"`
+	Event     string   `json:"event,omitempty"`
+	Users     []string `json:"users,omitempty"` // email actions: instance users to notify (validated by v1.0.90+: "Invalid user list")
+	Enabled   bool     `json:"enabled"`
 }
 
 // Field

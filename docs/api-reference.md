@@ -13,14 +13,14 @@ All endpoints are under `/api/app/`.
 | Resource | List | Get | Create | Update | Delete | Quirks |
 |----------|------|-----|--------|--------|--------|--------|
 | **Tag** | `get_tags/v1` (GET) | `get_tag/v1?id=X` (GET) | `create_tag/v1` (POST) | `update_tag/v1` (POST) | `delete_tag/v1` (POST) | ID prefix `t...` |
-| **Group** | `get_groups/v1` (GET) | `get_group/v1?id=X` (GET) | `create_group/v1` (POST) | `update_group/v1` (POST) | `delete_group/v1` (POST) | ID prefix `g...` |
+| **Group** | `get_groups/v1` (GET) | `get_group/v1?id=X` (GET) | `create_group/v1` (POST) | `update_group/v1` (POST) | `delete_group/v1` (POST) | ID prefix `g...`; **v1.0.90**: `hostname_match` is validated as a **regular expression** (invalid regex → HTTP 500 `Invalid hostname match`) |
 | **Category** | `get_categories/v1` (GET) | `get_category/v1?id=X` (GET) | `create_category/v1` (POST) | `update_category/v1` (POST) | `delete_category/v1` (POST) | ID prefix `ca...` |
 | **Plugin** | `get_plugins/v1` (GET) | `get_plugin/v1?id=X` (GET) | `create_plugin/v1` (POST) | `update_plugin/v1` (POST) | `delete_plugin/v1` (POST) | ID prefix `p...`; **NO upsert** — always `create_plugin/v1` even with `id` |
-| **Event** | `get_events/v1` (GET) | `get_event/v1?id=X` (GET) | `create_event/v1` (POST) | `update_event/v1` (POST) | `delete_event/v1` (POST) | ID prefix `e...`; workflows: `plugin="_workflow"`, `type="workflow"`, nested `workflow` DAG |
+| **Event** | `get_events/v1` (GET) | `get_event/v1?id=X` (GET) | `create_event/v1` (POST) | `update_event/v1` (POST) | `delete_event/v1` (POST) | ID prefix `e...`; workflows: `plugin="_workflow"`, `type="workflow"`, nested `workflow` DAG; **v1.0.90**: `category` and `algo` are **required on create** (HTTP 400 otherwise); plugin params under **`params`** (object keyed by param ID), validated at create; **interval triggers require `start`** (unix seconds or ms; `Invalid starting date/time specified for interval`) |
 | **Monitor** | `get_monitors/v1` (GET) | `get_monitor/v1?id=X` (GET) | `create_monitor/v1` (POST) | `update_monitor/v1` (POST) | `delete_monitor/v1` (POST) | ID prefix `m...` |
 | **Alert** | `get_alerts/v1` (GET) | `get_alert/v1?id=X` (GET) | `create_alert/v1` (POST) | `update_alert/v1` (POST) | `delete_alert/v1` (POST) | ID prefix `a...` |
 | **Role** | `get_roles/v1` (GET) | `get_role/v1?id=X` (GET) | `create_role/v1` (POST) | `update_role/v1` (POST) | `delete_role/v1` (POST) | `privileges` = `map[string]int` (1/0, NOT bool) |
-| **API Key** | `get_api_keys/v1` (GET) | `get_api_key/v1` (**POST** body `{"id":"..."}`) | `create_api_key/v1` (POST) | `update_api_key/v1` (POST) | `delete_api_key/v1` (POST) | **QUIRKS**: (1) read is POST, not GET; (2) `key` write-only, NOT sent on update; (3) `active` is int `1`/`0` |
+| **API Key** | `get_api_keys/v1` (GET) | `get_api_key/v1` (**POST** body `{"id":"..."}`) | `create_api_key/v1` (POST) | `update_api_key/v1` (POST) | `delete_api_key/v1` (POST) | **QUIRKS**: (1) read is POST, not GET; (2) `key` NOT sent on update; `active` is int `1`/`0`; (3) the usable key is exposed on **create only** on both versions — v1.0.49 read returns nothing, **v1.0.90+ read returns a server-side hash** (64-char hex), never the issued value |
 | **Web Hook** | `get_web_hooks/v1` (GET) | `get_web_hook/v1?id=X` (GET) | `create_web_hook/v1` (POST) | `update_web_hook/v1` (POST) | `delete_web_hook/v1` (POST) | `headers` = list of `{name, value}` objects, NOT a map |
 | **Channel** | `get_channels/v1` (GET) | `get_channel/v1?id=X` (GET) | `create_channel/v1` (POST) | `update_channel/v1` (POST) | `delete_channel/v1` (POST) | ID prefix `ch...` |
 | **Secret** | `get_secrets/v1` (GET) | `get_secret/v1?id=X` (GET) | `create_secret/v1` (POST) | `update_secret/v1` (POST) | `delete_secret/v1` (POST) | ID prefix `se...`; admin only; `fields` encrypted + write-only |
@@ -133,7 +133,7 @@ Multipart uploads (`upload_bucket_files/v1`, ticket file upload) and SSE streami
 
 ## Batch Endpoint
 
-> **Version note**: `get_multiple/v1` was **removed in v1.0.49** (returned `"Unsupported API"`) and **restored in v1.0.90**. `epoch` is fractional (float64) in v1.0.90. The SDK handles both versions.
+> **Version note**: `get_multiple/v1` was **removed in v1.0.49** (returned `"Unsupported API"`) and **restored in v1.0.90**. `epoch` is fractional (float64) in v1.0.90. The SDK handles both versions. **v1.0.90 requires the `lists` parameter** (absent → HTTP 500 `Missing required request property: lists`); the SDK sends the full standard list set when `Lists` is empty so empty-opts calls keep working on both versions.
 
 | Endpoint | Method | Purpose |
 |----------|--------|---------|

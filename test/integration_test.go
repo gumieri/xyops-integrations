@@ -1,8 +1,11 @@
 package integration
 
 import (
+	"context"
+	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/gumieri/xyops-integrations/sdk"
 )
@@ -31,6 +34,13 @@ func skipIfNoClient(t *testing.T) {
 	}
 }
 
+// cleanupCtx returns a context for use inside t.Cleanup functions.
+// t.Context() is canceled just before Cleanup-registered functions run
+// (Go 1.24+), so HTTP calls in cleanups must not use it.
+func cleanupCtx() (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.Background(), 30*time.Second)
+}
+
 func TestTagCRUD(t *testing.T) {
 	skipIfNoClient(t)
 
@@ -39,7 +49,9 @@ func TestTagCRUD(t *testing.T) {
 		t.Fatalf("create tag: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := xyopsClient.Tags.Delete(t.Context(), created.ID); err != nil {
+		ctx, cancel := cleanupCtx()
+		defer cancel()
+		if err := xyopsClient.Tags.Delete(ctx, created.ID); err != nil {
 			t.Errorf("cleanup delete tag: %v", err)
 		}
 	})
@@ -85,14 +97,16 @@ func TestGroupCRUD(t *testing.T) {
 
 	created, err := xyopsClient.Groups.Create(t.Context(), &sdk.Group{
 		Title:         "it-group",
-		HostnameMatch: "*.example.com",
+		HostnameMatch: `.*\.example\.com`, // v1.0.90 validates hostname_match as a regular expression
 		SortOrder:     10,
 	})
 	if err != nil {
 		t.Fatalf("create group: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := xyopsClient.Groups.Delete(t.Context(), created.ID); err != nil {
+		ctx, cancel := cleanupCtx()
+		defer cancel()
+		if err := xyopsClient.Groups.Delete(ctx, created.ID); err != nil {
 			t.Errorf("cleanup delete group: %v", err)
 		}
 	})
@@ -101,30 +115,77 @@ func TestGroupCRUD(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get group: %v", err)
 	}
-	if got.HostnameMatch != "*.example.com" {
-		t.Errorf("expected hostname_match %q, got %q", "*.example.com", got.HostnameMatch)
+	if got.HostnameMatch != `.*\.example\.com` {
+		t.Errorf("expected hostname_match %q, got %q", `.*\.example\.com`, got.HostnameMatch)
 	}
 }
 
 func TestEventCRUD(t *testing.T) {
 	skipIfNoClient(t)
 
+	// v1.0.90+ requires an existing category on event create (HTTP 400
+	// "Missing parameter: category" otherwise); reuse the first one.
+	cats, err := xyopsClient.Categories.List(t.Context())
+	if err != nil {
+		t.Fatalf("list categories: %v", err)
+	}
+	if len(cats) == 0 {
+		t.Fatal("no categories on instance; event create requires one on v1.0.90+")
+	}
+
+	// Use the first event-type plugin on the instance rather than
+	// hardcoding a plugin name.
+	plugins, err := xyopsClient.Plugins.List(t.Context())
+	if err != nil {
+		t.Fatalf("list plugins: %v", err)
+	}
+	pluginID := ""
+	for _, p := range plugins {
+		if p.Type == "event" {
+			pluginID = p.ID
+			break
+		}
+	}
+	if pluginID == "" {
+		t.Skip("no event-type plugins on instance; cannot create event")
+	}
+
+	// v1.0.90 validates required plugin parameters at event create
+	// (HTTP 400 "Parameter 'x' is required"). Plugin params are supplied
+	// under Event.Params as an object keyed by param ID — not Fields.
+	definition, err := xyopsClient.Plugins.Get(t.Context(), pluginID)
+	if err != nil {
+		t.Fatalf("get plugin %s: %v", pluginID, err)
+	}
+	params := make(map[string]any)
+	for _, prm := range definition.Params {
+		if prm.Required == nil || !*prm.Required {
+			continue
+		}
+		params[prm.ID] = fmt.Sprintf("%v", prm.Value)
+	}
+
 	event := &sdk.Event{
-		Title:   "it-event",
-		Plugin:  "demo_echo",
-		Targets: []string{"it-group"},
-		Enabled: true,
+		Title:    "it-event",
+		Plugin:   pluginID,
+		Targets:  []string{"it-group"},
+		Category: cats[0].ID,
+		Algo:     "random", // v1.0.90+ requires an explicit target algorithm on create
+		Params:   params,
+		Enabled:  true,
 		Triggers: []sdk.Trigger{
-			{Type: "interval", Duration: 60},
+			// v1.0.90 validates an interval trigger's starting date/time
+			// (`start`, unix seconds or ms); v1.0.49 accepted duration alone.
+			{Type: "interval", Duration: 60, Start: time.Now().Unix()},
 		},
 		Limits: []sdk.Limit{
 			{Type: "job", Enabled: true, Amount: 1},
 			{Type: "queue", Enabled: true, Amount: 0},
 			{Type: "retry", Enabled: true, Amount: 0},
 		},
-		Actions: []sdk.Action{
-			{Condition: "failure", Type: "email", Email: "ops@example.com", Enabled: true},
-		},
+		// No Actions in this test: v1.0.90 email actions require a valid
+		// instance user list (Action.Users), which is instance-dependent.
+		// Covered by docs/api-reference.md.
 	}
 
 	created, err := xyopsClient.Events.Create(t.Context(), event)
@@ -132,7 +193,9 @@ func TestEventCRUD(t *testing.T) {
 		t.Fatalf("create event: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := xyopsClient.Events.Delete(t.Context(), created.ID, &sdk.DeleteEventOpts{DeleteJobs: true}); err != nil {
+		ctx, cancel := cleanupCtx()
+		defer cancel()
+		if err := xyopsClient.Events.Delete(ctx, created.ID, &sdk.DeleteEventOpts{DeleteJobs: true}); err != nil {
 			t.Errorf("cleanup delete event: %v", err)
 		}
 	})
@@ -151,7 +214,7 @@ func TestEventCRUD(t *testing.T) {
 	updated, err := xyopsClient.Events.Update(t.Context(), &sdk.Event{
 		ID:      created.ID,
 		Title:   "it-event-updated",
-		Plugin:  "demo_echo",
+		Plugin:  pluginID,
 		Enabled: false,
 	})
 	if err != nil {
@@ -176,7 +239,9 @@ func TestMonitorCRUD(t *testing.T) {
 		t.Fatalf("create monitor: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := xyopsClient.Monitors.Delete(t.Context(), created.ID); err != nil {
+		ctx, cancel := cleanupCtx()
+		defer cancel()
+		if err := xyopsClient.Monitors.Delete(ctx, created.ID); err != nil {
 			t.Errorf("cleanup delete monitor: %v", err)
 		}
 	})
@@ -203,7 +268,9 @@ func TestAlertCRUD(t *testing.T) {
 		t.Fatalf("create alert: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := xyopsClient.Alerts.Delete(t.Context(), created.ID); err != nil {
+		ctx, cancel := cleanupCtx()
+		defer cancel()
+		if err := xyopsClient.Alerts.Delete(ctx, created.ID); err != nil {
 			t.Errorf("cleanup delete alert: %v", err)
 		}
 	})
@@ -229,35 +296,56 @@ func TestAPIKeyWriteOnly(t *testing.T) {
 		t.Fatalf("create api key: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := xyopsClient.APIKeys.Delete(t.Context(), created.ID); err != nil {
+		ctx, cancel := cleanupCtx()
+		defer cancel()
+		if err := xyopsClient.APIKeys.Delete(ctx, created.ID); err != nil {
 			t.Errorf("cleanup delete api key: %v", err)
 		}
 	})
 
-	// The key value is write-only — the create response may include it,
-	// but a subsequent Get must NOT leak it.
+	// The issued key value is exposed on create only, on both versions:
+	// v1.0.49 returns nothing on read (write-only), while v1.0.90+ returns
+	// a server-side hash (64-char hex) — never the usable key issued above.
 	got, err := xyopsClient.APIKeys.Get(t.Context(), created.ID)
 	if err != nil {
 		t.Fatalf("get api key: %v", err)
 	}
-	if got.Key != "" {
-		t.Errorf("expected write-only key to be empty on read, got %q", got.Key)
+	if got.Key == created.Key {
+		t.Errorf("read leaked the usable key value issued at create: %q", got.Key)
+	}
+	if got.Key != "" && len(got.Key) == len(created.Key) {
+		t.Errorf("read returned a same-format key value instead of a hash or empty: %q", got.Key)
 	}
 }
 
 func TestJobTriggerAndSearch(t *testing.T) {
 	skipIfNoClient(t)
 
+	// v1.0.90+ requires a category on event create; reuse the first one.
+	cats, err := xyopsClient.Categories.List(t.Context())
+	if err != nil {
+		t.Fatalf("list categories: %v", err)
+	}
+	if len(cats) == 0 {
+		t.Fatal("no categories on instance; event create requires one on v1.0.90+")
+	}
+
 	event, err := xyopsClient.Events.Create(t.Context(), &sdk.Event{
-		Title:   "it-job-event",
-		Plugin:  "demo_echo",
+		Title:    "it-job-event",
+		Plugin:   "testplug",
+		Category: cats[0].ID,
+		Algo:     "random", // v1.0.90+ requires an explicit target algorithm on create
+		// NOTE: needs real Targets (an existing group/server) before this
+		// test can trigger a job; currently run only with explicit go-ahead.
 		Enabled: true,
 	})
 	if err != nil {
 		t.Fatalf("create event: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := xyopsClient.Events.Delete(t.Context(), event.ID, &sdk.DeleteEventOpts{DeleteJobs: true}); err != nil {
+		ctx, cancel := cleanupCtx()
+		defer cancel()
+		if err := xyopsClient.Events.Delete(ctx, event.ID, &sdk.DeleteEventOpts{DeleteJobs: true}); err != nil {
 			t.Errorf("cleanup delete event: %v", err)
 		}
 	})

@@ -2,8 +2,9 @@ package provider
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"math/big"
+	"strconv"
 
 	"github.com/gumieri/xyops-integrations/sdk"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -44,12 +45,12 @@ func (d *configDataSource) Metadata(_ context.Context, _ datasource.MetadataRequ
 
 func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "xyops configuration",
+		Description: "xyops configuration (string-encoded; nested values are JSON)",
 		Attributes: map[string]schema.Attribute{
 			"config": schema.MapAttribute{
 				Computed:    true,
-				Description: "xyops configuration as a dynamic map",
-				ElementType: types.DynamicType,
+				Description: "xyops configuration; scalar values as strings, nested structures JSON-encoded",
+				ElementType: types.StringType,
 			},
 		},
 	}
@@ -66,30 +67,35 @@ func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 
 	elems := make(map[string]attr.Value)
 	for k, v := range cfg {
-		switch val := v.(type) {
-		case string:
-			elems[k] = types.StringValue(val)
-		case bool:
-			elems[k] = types.BoolValue(val)
-		case float64:
-			elems[k] = types.NumberValue(new(big.Float).SetFloat64(val))
-		case int:
-			elems[k] = types.Int64Value(int64(val))
-		default:
-			elems[k] = types.DynamicValue(types.StringValue(""))
-			resp.Diagnostics.AddWarning(
-				"Unsupported config value type",
-				"Config key "+k+" has type "+fmt.Sprintf("%T", v)+" which is not supported; set as empty string.",
-			)
-		}
+		elems[k] = types.StringValue(configValueString(v))
 	}
 
 	var diags diag.Diagnostics
-	data.Config, diags = types.MapValueFrom(ctx, types.DynamicType, elems)
+	data.Config, diags = types.MapValueFrom(ctx, types.StringType, elems)
 	resp.Diagnostics.Append(diags...)
 
 	diags = resp.State.Set(ctx, &data)
 	resp.Diagnostics.Append(diags...)
+}
+
+// configValueString renders a config value as a string; nested structures are
+// JSON-encoded. The framework forbids dynamic types inside collections, so
+// the heterogeneous config map is stringly-typed.
+func configValueString(v any) string {
+	switch val := v.(type) {
+	case string:
+		return val
+	case bool:
+		return strconv.FormatBool(val)
+	case float64:
+		return strconv.FormatFloat(val, 'f', -1, 64)
+	default:
+		b, err := json.Marshal(val)
+		if err != nil {
+			return fmt.Sprintf("%v", val)
+		}
+		return string(b)
+	}
 }
 
 type configDataModel struct {

@@ -63,7 +63,7 @@ func (r *apiKeyResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 			"key": schema.StringAttribute{
 				Computed:    true,
 				Sensitive:   true,
-				Description: "API key value (write-only, returned on create only)",
+				Description: "API key value (sensitive; the usable value is returned on create only — v1.0.90+ reads return a server-side hash, v1.0.49 returns nothing)",
 			},
 			"active": schema.BoolAttribute{
 				Optional:    true,

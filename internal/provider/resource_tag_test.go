@@ -1,6 +1,7 @@
 package provider_test
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -16,14 +17,14 @@ func TestAccTagResource(t *testing.T) {
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccTagConfigBasic,
+				Config: testAccTagConfigBasic(),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("xyops_tag.test", "title", "test-tag"),
 					resource.TestCheckResourceAttrSet("xyops_tag.test", "id"),
 				),
 			},
 			{
-				Config: testAccTagConfigUpdate,
+				Config: testAccTagConfigUpdate(),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("xyops_tag.test", "title", "test-tag-updated"),
 				),
@@ -59,24 +60,29 @@ func protoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServer, err
 	}
 }
 
-const testAccTagConfigBasic = `
+// testAccProviderConfig renders the provider block from the live-instance
+// env vars (validated by testAccPreCheck).
+func testAccProviderConfig() string {
+	return fmt.Sprintf(`
 provider "xyops" {
-  base_url = "http://localhost:8000"
-  api_key  = "test-api-key"
+  base_url = %q
+  api_key  = %q
+}
+`, os.Getenv("XYOPS_BASE_URL"), os.Getenv("XYOPS_API_KEY"))
 }
 
+func testAccTagConfigBasic() string {
+	return testAccProviderConfig() + `
 resource "xyops_tag" "test" {
   title = "test-tag"
 }
 `
-
-const testAccTagConfigUpdate = `
-provider "xyops" {
-  base_url = "http://localhost:8000"
-  api_key  = "test-api-key"
 }
 
+func testAccTagConfigUpdate() string {
+	return testAccProviderConfig() + `
 resource "xyops_tag" "test" {
   title = "test-tag-updated"
 }
 `
+}

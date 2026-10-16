@@ -16,12 +16,24 @@ type GetMultipleOpts struct {
 	ServerCache bool
 }
 
+// defaultGetMultipleLists is the list set sent when opts.Lists is empty.
+// v1.0.90+ rejects get_multiple without a `lists` parameter (HTTP 500,
+// code=admin: "Missing required request property: lists"); v1.0.49 returned
+// every list when the parameter was absent. Sending the standard set keeps
+// empty-opts behavior working across both versions.
+var defaultGetMultipleLists = []string{
+	"tags", "groups", "events", "categories", "plugins", "monitors",
+	"alerts", "roles", "api_keys", "web_hooks", "channels", "buckets", "secrets",
+}
+
 // GetMultiple batch-fetches several list types in one call.
 func (s *GetMultipleService) Get(ctx context.Context, opts GetMultipleOpts) (*GetMultipleResponse, error) {
 	params := map[string]string{}
-	if len(opts.Lists) > 0 {
-		params["lists"] = strings.Join(opts.Lists, ",")
+	lists := opts.Lists
+	if len(lists) == 0 {
+		lists = defaultGetMultipleLists
 	}
+	params["lists"] = strings.Join(lists, ",")
 	if opts.Jobs {
 		params["jobs"] = "1"
 	}
